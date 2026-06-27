@@ -24,6 +24,11 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Tool backup files (drawio, etc.)
+.*.bak
+*~
+.$*
+
 # Bundled models (git LFS)
 models/*.onnx
 models/*tokenizer*
