@@ -38,10 +38,17 @@ class Embedder:
             max_len = max(len(e.ids) for e in encodings)
             ids = np.zeros((len(encodings), max_len), dtype=np.int64)
             mask = np.zeros((len(encodings), max_len), dtype=np.int64)
+            token_type = np.zeros((len(encodings), max_len), dtype=np.int64)
             for i, e in enumerate(encodings):
                 ids[i, : len(e.ids)] = e.ids
                 mask[i, : len(e.ids)] = e.attention_mask
-            outputs = self.session.run(None, {"input_ids": ids, "attention_mask": mask})
+                if e.type_ids:
+                    token_type[i, : len(e.type_ids)] = e.type_ids
+            outputs = self.session.run(None, {
+                "input_ids": ids,
+                "attention_mask": mask,
+                "token_type_ids": token_type,
+            })
             last_hidden = outputs[0]
             mask_f = mask[:, :, None].astype(np.float32)
             summed = np.sum(last_hidden * mask_f, axis=1)

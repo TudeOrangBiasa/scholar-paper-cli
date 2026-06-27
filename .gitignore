@@ -28,7 +28,3 @@ Thumbs.db
 .*.bak
 *~
 .$*
-
-# Bundled models (git LFS)
-models/*.onnx
-models/*tokenizer*

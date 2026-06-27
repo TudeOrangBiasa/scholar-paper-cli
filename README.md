@@ -113,7 +113,7 @@ See [docs/PLAN.md](docs/PLAN.md) for the full plan, [docs/WORKFLOW.md](docs/WORK
 
 ## Status
 
-v0.1.0 feature-complete. 14 of 14 planned issues done. 257 tests pass (9 model-skip pending mE5 model download). Security review applied: 0 CRITICAL, 0 HIGH, 0 MEDIUM.
+v0.1.0 feature-complete. 14 of 14 planned issues done. 266 tests pass (0 skip, embedding model bundled). Security review applied: 0 CRITICAL, 0 HIGH, 0 MEDIUM.
 
 Future work is open-ended. See [docs/PLAN.md](docs/PLAN.md) for the original plan and the one deferred item: cross-encoder rerank (v3 in the plan, blocked by bundle size and missing Indonesian benchmark for any small multilingual cross-encoder).
 
