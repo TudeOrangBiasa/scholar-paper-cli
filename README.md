@@ -111,6 +111,34 @@ uv run ruff format      # auto-format
 
 See [docs/PLAN.md](docs/PLAN.md) for the full plan, [docs/WORKFLOW.md](docs/WORKFLOW.md) for document-writing integration, [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for env vars.
 
+## Status
+
+v0.1.0 feature-complete. 14 of 14 planned issues done. 257 tests pass (9 model-skip pending mE5 model download). Security review applied: 0 CRITICAL, 0 HIGH, 0 MEDIUM.
+
+Future work is open-ended. See [docs/PLAN.md](docs/PLAN.md) for the original plan and the one deferred item: cross-encoder rerank (v3 in the plan, blocked by bundle size and missing Indonesian benchmark for any small multilingual cross-encoder).
+
+## Acknowledgments
+
+- **Semantic Scholar** (Allen AI) for the Graph API and the public dataset of ~200M academic papers.
+- **[akapet00/semantic-scholar-mcp](https://github.com/akapet00/semantic-scholar-mcp)** for the upstream reference. The 15 tool set mirrors the original.
+- **[FastMCP](https://github.com/jlowin/fastmcp)** for the Python MCP server framework.
+- Open source libraries: Pydantic, httpx, sqlite-vec, ONNX Runtime, tokenizers, pytest, ruff, ty.
+- Embedding model: [intfloat/multilingual-e5-small](https://huggingface.co/intfloat/multilingual-e5-small) (MIT license).
+
+## How to contribute
+
+1. Check [docs/PLAN.md](docs/PLAN.md) for the project plan and any open work.
+2. Read [AGENTS.md](AGENTS.md) for conventions (TDD, ponytail, anti-AI-slop rules).
+3. Open an issue describing the change.
+4. Write tests first, then minimum code, then verify all checks pass:
+   ```bash
+   uv run pytest
+   uv run ruff check src tests
+   uv run ty check src tests
+   uv run ruff format --check src tests
+   ```
+5. Open a PR. Title format: `type(scope): short description` (e.g. `feat(api): add batch search endpoint`).
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
