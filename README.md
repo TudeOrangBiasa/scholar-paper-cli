@@ -1,5 +1,7 @@
 # scholar-paper-mcp
 
+![Banner](docs/banner.png)
+
 Hybrid MCP server for Semantic Scholar. 15 tools, persistent SQLite cache, offline fallback, multilingual semantic search.
 
 Pairs with document-writing skill for hackathon, proposal, thesis, and article workflows.
