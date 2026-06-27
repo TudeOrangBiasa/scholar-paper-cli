@@ -80,22 +80,23 @@ See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for all `SPM_*` environment v
 
 ## Architecture
 
-```mermaid
-flowchart TD
-  T[Tool call] --> C{Cache hit}
-  C -->|Yes fresh| R[Return cached]
-  C -->|Yes stale| O{Online?}
-  O -->|Yes| A[API revalidate]
-  O -->|No| R2[Return cached, offline: true]
-  C -->|No| O2{Online?}
-  O2 -->|Yes| A2[API call, persist, embed]
-  O2 -->|No| E[Raise OfflineError]
-  A --> J[Wrap with cache metadata]
-  A2 --> J
-  R --> J
-  R2 --> J
-  J --> K[Return ToolResponse]
-```
+![Architecture diagram](docs/architecture.drawio.png)
+
+[Source drawio file](docs/architecture.drawio) (editable in drawio desktop).
+
+### Tool call flow
+
+A tool call follows this sequence:
+
+1. **MCP client** (OpenCode) sends tool call over stdio.
+2. **FastMCP server** routes to the matching tool wrapper.
+3. **Tool function** composes `CachedSemanticScholarClient` + storage CRUD + (optionally) embedder.
+4. **Cache check**: fresh hit returns cached data. Stale or miss triggers step 5.
+5. **API call** (if online): SS API via rate-limited, circuit-broken, offline-aware client.
+6. **Persist**: paper, author, citation, session rows written to SQLite. Embedding stored in `embeddings_vec`.
+7. **Wrap**: response enveloped as `ToolResponse[data, meta]`.
+
+See [docs/PLAN.md](docs/PLAN.md) for the full design rationale.
 
 ## Development
 
