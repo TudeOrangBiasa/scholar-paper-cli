@@ -1,6 +1,6 @@
 """Tests for models module."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Literal, cast
 
 import pytest
@@ -61,6 +61,104 @@ def test_paper_with_embedding() -> None:
     now = _utcnow()
     p = Paper(paper_id="abc", embedding=[0.1, 0.2, 0.3], fetched_at=now, ttl_until=now)
     assert p.embedding == [0.1, 0.2, 0.3]
+
+
+def test_paper_coerces_int_external_id_values() -> None:
+    """CorpusId from S2 API is int; model must accept and coerce to str."""
+    now = _utcnow()
+    p = Paper(
+        paper_id="abc",
+        fetched_at=now,
+        ttl_until=now + timedelta(days=30),
+        external_ids={"DOI": "10.1234/abc", "CorpusId": 272999614},  # int!
+    )
+    assert p.external_ids["DOI"] == "10.1234/abc"
+    assert p.external_ids["CorpusId"] == "272999614"  # coerced
+    assert isinstance(p.external_ids["CorpusId"], str)
+
+
+def test_paper_coerces_null_lists_and_bool() -> None:
+    """S2 returns null for these fields; model must accept and use default."""
+    now = _utcnow()
+    p = Paper(
+        paper_id="abc",
+        fetched_at=now,
+        ttl_until=now + timedelta(days=30),
+        publication_types=None,
+        fields_of_study=None,
+        authors=None,
+        is_open_access=None,
+        external_ids=None,
+    )
+    assert p.publication_types == []
+    assert p.fields_of_study == []
+    assert p.authors == []
+    assert p.is_open_access is False
+    assert p.external_ids == {}
+
+
+def test_author_coerces_null_fields() -> None:
+    """S2 returns null for author list fields; model must accept."""
+    now = _utcnow()
+    a = Author(
+        author_id="123",
+        fetched_at=now,
+        ttl_until=now + timedelta(days=30),
+        name="X",
+        affiliations=None,
+        papers=None,
+        aliases=None,
+    )
+    assert a.affiliations == []
+    assert a.papers == []
+    assert a.aliases == []
+
+
+def test_paper_brief_coerces_null_citation_count() -> None:
+    pb = PaperBrief(paper_id="abc", citation_count=None)
+    assert pb.citation_count == 0
+
+
+def test_author_name_accepts_none() -> None:
+    """Some S2 disambiguation stubs have null name."""
+    now = _utcnow()
+    a = Author(
+        author_id="123",
+        fetched_at=now,
+        ttl_until=now + timedelta(days=30),
+        name=None,
+    )
+    assert a.name is None
+
+
+def test_paper_coerces_null_int_fields() -> None:
+    """S2 returns null for citation_count, reference_count, influential_citation_count."""
+    now = _utcnow()
+    p = Paper(
+        paper_id="abc",
+        fetched_at=now,
+        ttl_until=now + timedelta(days=30),
+        citation_count=None,
+        reference_count=None,
+        influential_citation_count=None,
+    )
+    assert p.citation_count == 0
+    assert p.reference_count == 0
+    assert p.influential_citation_count == 0
+
+
+def test_external_ids_filters_none_values() -> None:
+    """None values in external_ids should be filtered, not persisted."""
+    now = _utcnow()
+    p = Paper(
+        paper_id="abc",
+        fetched_at=now,
+        ttl_until=now + timedelta(days=30),
+        external_ids={"DOI": "10.1234/abc", "CorpusId": None, "ArXiv": None},
+    )
+    assert p.external_ids == {"DOI": "10.1234/abc"}
+    assert "CorpusId" not in p.external_ids
+    assert "ArXiv" not in p.external_ids
 
 
 def test_author_brief_minimal() -> None:

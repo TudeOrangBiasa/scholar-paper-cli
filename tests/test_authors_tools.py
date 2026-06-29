@@ -236,3 +236,14 @@ async def test_consolidate_skips_missing_duplicates(conn) -> None:
     upsert_author_db(conn, _make_author("canon", "Alice", papers=[PaperBrief(paper_id="p1")]))
     result = await consolidate_authors(conn, "canon", ["nonexistent_dup"])
     assert result.data.author_id == "canon"
+
+
+def test_name_similarity_handles_none() -> None:
+    """Name similarity must accept None inputs without crashing."""
+    from scholar_paper_mcp.tools.authors import _name_similarity
+
+    assert _name_similarity(None, "John") == 0.0
+    assert _name_similarity("John", None) == 0.0
+    assert _name_similarity(None, None) == 0.0
+    assert _name_similarity("John", "John") > 0.9
+    assert _name_similarity("Alice", "Bob") < 0.5

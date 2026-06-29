@@ -1,9 +1,27 @@
+"""Citation + reference edge persistence. Stub paper rows auto-inserted to satisfy FK."""
+
 import json
+import sqlite3
 
 from scholar_paper_mcp.models import CitationEdge
 
 
-def insert_citation(conn, edge: CitationEdge) -> None:
+def _ensure_paper_stub(conn: sqlite3.Connection, paper_id: str) -> None:
+    """Insert minimal paper row so FK constraints on citations/references pass.
+
+    Real paper metadata arrives later via get_paper_details; this row only
+    satisfies the FK requirement.
+    """
+    conn.execute(
+        """INSERT OR IGNORE INTO papers (paper_id, fetched_at, ttl_until)
+        VALUES (?, datetime('now'), datetime('now'))""",
+        (paper_id,),
+    )
+
+
+def insert_citation(conn: sqlite3.Connection, edge: CitationEdge) -> None:
+    _ensure_paper_stub(conn, edge.from_paper_id)
+    _ensure_paper_stub(conn, edge.to_paper_id)
     conn.execute(
         """INSERT INTO citations (from_paper_id, to_paper_id, context_intent, is_influential)
         VALUES (?, ?, ?, ?)
@@ -20,7 +38,9 @@ def insert_citation(conn, edge: CitationEdge) -> None:
     conn.commit()
 
 
-def insert_reference(conn, edge: CitationEdge) -> None:
+def insert_reference(conn: sqlite3.Connection, edge: CitationEdge) -> None:
+    _ensure_paper_stub(conn, edge.from_paper_id)
+    _ensure_paper_stub(conn, edge.to_paper_id)
     conn.execute(
         """INSERT INTO paper_references (from_paper_id, to_paper_id, is_influential)
         VALUES (?, ?, ?)

@@ -6,7 +6,12 @@ All models use extra="ignore" and str_strip_whitespace=True unless noted.
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
+
+
+def _or_default(v: Any, default: Any) -> Any:
+    """Return default if v is None, else v. Used by validators."""
+    return default if v is None else v
 
 
 class _Base(BaseModel):
@@ -32,6 +37,11 @@ class PaperBrief(_Base):
     citation_count: int = 0
     venue: str | None = None
 
+    @field_validator("citation_count", mode="before")
+    @classmethod
+    def _coerce_citation_count(cls, v: Any) -> Any:
+        return _or_default(v, 0)
+
 
 class Paper(_Base):
     """Normalized paper matching Semantic Scholar schema."""
@@ -52,6 +62,31 @@ class Paper(_Base):
     open_access_pdf_url: HttpUrl | None = None
     external_ids: dict[str, str] = Field(default_factory=dict)
     authors: list[AuthorBrief] = Field(default_factory=list)
+
+    @field_validator("publication_types", "fields_of_study", "authors", mode="before")
+    @classmethod
+    def _coerce_lists(cls, v: Any) -> Any:
+        return _or_default(v, [])
+
+    @field_validator("citation_count", "reference_count", "influential_citation_count", mode="before")
+    @classmethod
+    def _coerce_ints(cls, v: Any) -> Any:
+        return _or_default(v, 0)
+
+    @field_validator("is_open_access", mode="before")
+    @classmethod
+    def _coerce_is_open_access(cls, v: Any) -> Any:
+        return _or_default(v, False)
+
+    @field_validator("external_ids", mode="before")
+    @classmethod
+    def _coerce_external_ids(cls, v: Any) -> Any:
+        if v is None:
+            return {}
+        if not isinstance(v, dict):
+            return v
+        return {k: str(val) for k, val in v.items() if val is not None}
+
     embedding: list[float] | None = None
     raw: dict[str, Any] | None = None
 
@@ -62,12 +97,17 @@ class Author(_Base):
     author_id: str
     fetched_at: datetime
     ttl_until: datetime
-    name: str
+    name: str | None = None
     affiliations: list[str] = Field(default_factory=list)
     h_index: int | None = None
     paper_count: int | None = None
     papers: list[PaperBrief] = Field(default_factory=list)
     aliases: list[str] = Field(default_factory=list)
+
+    @field_validator("affiliations", "papers", "aliases", mode="before")
+    @classmethod
+    def _coerce_lists(cls, v: Any) -> Any:
+        return _or_default(v, [])
 
 
 class CitationEdge(_Base):

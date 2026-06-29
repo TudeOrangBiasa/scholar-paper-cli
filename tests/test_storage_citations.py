@@ -107,3 +107,25 @@ def test_reference_drops_context_intent(conn, now) -> None:
     assert len(results) == 1
     assert results[0].context_intent is None
     assert results[0].is_influential is True
+
+
+
+def test_insert_citation_creates_stub_papers(conn, now) -> None:
+    """Citation edge should auto-create stub papers for both endpoints."""
+    edge = CitationEdge(from_paper_id="unknown1", to_paper_id="unknown2", is_influential=True)
+    insert_citation(conn, edge)
+    # FK no longer fails
+    row = conn.execute("SELECT paper_id FROM papers WHERE paper_id = ?", ("unknown1",)).fetchone()
+    assert row is not None
+    row2 = conn.execute("SELECT paper_id FROM papers WHERE paper_id = ?", ("unknown2",)).fetchone()
+    assert row2 is not None
+
+
+def test_insert_reference_creates_stub_papers(conn, now) -> None:
+    """Reference edge should auto-create stub papers for both endpoints."""
+    edge = CitationEdge(from_paper_id="ref_src", to_paper_id="ref_dst", is_influential=False)
+    insert_reference(conn, edge)
+    row = conn.execute("SELECT paper_id FROM papers WHERE paper_id = ?", ("ref_src",)).fetchone()
+    assert row is not None
+    row2 = conn.execute("SELECT paper_id FROM papers WHERE paper_id = ?", ("ref_dst",)).fetchone()
+    assert row2 is not None

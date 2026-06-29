@@ -251,3 +251,24 @@ def test_semantic_scholar_client_default_rate_matches_ss_limits() -> None:
     # SS unauthenticated: 100 req / 5 min — defaults should be below that
     assert client.limiter.rate <= 1.0
     assert client.limiter.capacity <= 10
+
+
+
+@pytest.mark.asyncio
+async def test_search_authors_omits_unsupported_fields() -> None:
+    """S2 /author/search rejects aliases+papers; client must not send them."""
+    from scholar_paper_mcp.api.client import DEFAULT_AUTHOR_SEARCH_FIELDS
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/author/search"
+        fields = request.url.params["fields"]
+        assert "aliases" not in fields, f"aliases not allowed in search: {fields}"
+        assert "papers" not in fields, f"papers not allowed in search: {fields}"
+        return httpx.Response(200, json={"data": []})
+
+    transport = httpx.MockTransport(handler)
+    async with SemanticScholarClient(transport=transport, base_url="http://test") as client:
+        result = await client.search_authors("LeCun")
+    assert result == {"data": []}
+    assert "aliases" not in DEFAULT_AUTHOR_SEARCH_FIELDS
+    assert "papers" not in DEFAULT_AUTHOR_SEARCH_FIELDS

@@ -24,6 +24,8 @@ DEFAULT_PAPER_FIELDS = (
     "openAccessPdf,externalIds,authors"
 )
 DEFAULT_AUTHOR_FIELDS = "authorId,name,affiliations,hIndex,paperCount,aliases,papers"
+# /author/search rejects aliases + papers; use minimal fields.
+DEFAULT_AUTHOR_SEARCH_FIELDS = "authorId,name,affiliations,hIndex,paperCount"
 
 
 class SemanticScholarClient:
@@ -135,7 +137,7 @@ class SemanticScholarClient:
                 "query": query,
                 "limit": limit,
                 "offset": offset,
-                "fields": fields or DEFAULT_AUTHOR_FIELDS,
+                "fields": fields or DEFAULT_AUTHOR_SEARCH_FIELDS,
             },
         )
 

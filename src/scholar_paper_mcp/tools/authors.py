@@ -69,8 +69,12 @@ def _parse_search_result(data: dict[str, Any], query: str) -> AuthorSearchResult
 # ── Helpers ─────────────────────────────────────────────────────
 
 
-def _name_similarity(a: str, b: str) -> float:
-    return SequenceMatcher(None, a.lower(), b.lower()).ratio()
+def _name_similarity(a: str | None, b: str | None) -> float:
+    a_str = (a or "").lower()
+    b_str = (b or "").lower()
+    if not a_str and not b_str:
+        return 0.0
+    return SequenceMatcher(None, a_str, b_str).ratio()
 
 
 def _meta(source: Literal["cache", "api", "offline_cache"] = "cache") -> CacheMetadata:
@@ -174,7 +178,7 @@ async def consolidate_authors(
         raise APINotFoundError(f"author not found: {canonical_id}")
 
     seen_paper_ids = {p.paper_id for p in canonical.papers}
-    seen_aliases = set(canonical.aliases) | {canonical.name}
+    seen_aliases = set(canonical.aliases) | ({canonical.name} if canonical.name else set())
 
     for dup_id in duplicate_ids:
         dup = _get_author_from_db(conn, dup_id)
