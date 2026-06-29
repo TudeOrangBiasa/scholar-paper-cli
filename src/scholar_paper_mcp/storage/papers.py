@@ -1,3 +1,5 @@
+"""Paper persistence: upsert, get, search by DOI/ArXiv, count, list. Embedding stored as float32 blob."""
+
 import json
 import struct
 from datetime import datetime

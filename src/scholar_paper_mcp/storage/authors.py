@@ -1,3 +1,5 @@
+"""Author persistence: upsert, get, search by name, count, list."""
+
 import json
 from datetime import datetime
 

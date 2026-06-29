@@ -1,18 +1,8 @@
-"""Custom exception hierarchy for scholar-paper-mcp.
+"""Exception hierarchy: ScholarPaperError -> OfflineError, CacheError, APIError, EmbeddingError, ConfigError.
 
-Root: ScholarPaperError
-  ├── OfflineError       — API unreachable and no cached data
-  ├── CacheError         — SQLite/cache layer failures
-  │   └── CacheMissError — explicit cache miss
-  ├── APIError           — Semantic Scholar API failures
-  │   ├── APIRateLimitError  — 429
-  │   ├── APINotFoundError   — 404
-  │   ├── APIServerError     — 5xx
-  │   └── APITimeoutError    — timeout/connect
-  ├── EmbeddingError     — ONNX model load/inference
-  │   ├── EmbeddingModelNotFoundError
-  │   └── EmbeddingInferenceError
-  └── ConfigError        — invalid config / missing required value
+APIError splits into APIRateLimitError (429), APINotFoundError (404), APIServerError (5xx), APITimeoutError.
+CacheError splits into CacheMissError.
+EmbeddingError splits into EmbeddingModelNotFoundError, EmbeddingInferenceError.
 """
 
 from typing import Any

@@ -1,3 +1,5 @@
+"""Session persistence: add/remove/list paper IDs per session_id, ordered by add time."""
+
 from datetime import UTC, datetime
 
 

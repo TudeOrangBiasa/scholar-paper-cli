@@ -1,3 +1,5 @@
+"""Storage layer: SQLite-backed papers, authors, citations, references, sessions + cache wrapper."""
+
 from scholar_paper_mcp.storage.authors import (
     count_authors,
     get_author,
