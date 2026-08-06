@@ -1,7 +1,5 @@
 # scholar-paper-cli
 
-![Banner](docs/banner.png)
-
 spm — CLI for Semantic Scholar. 15 commands, persistent SQLite cache, offline fallback, multilingual semantic search.
 
 Pairs with the `writing-for-agents` skill for hackathon, proposal, thesis, and article workflows.
@@ -73,13 +71,7 @@ Every command returns a `ToolResponse` with `data` and `meta` (cache metadata: s
 
 See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for all `SPM_*` environment variables.
 
-## Architecture
-
-![Architecture diagram](docs/architecture.drawio.png)
-
-[Source drawio file](docs/architecture.drawio) (editable in drawio desktop).
-
-### Command call flow
+## Command call flow
 
 A command follows this sequence:
 
