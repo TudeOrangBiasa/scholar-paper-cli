@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### Added
+- `spm` CLI with 15 subcommands, replacing the FastMCP server. JSON-only output, exit-code + JSON-error contract (`0` ok, `1` runtime error, `2` argparse usage).
+- `skills/spm/SKILL.md` agent skill; installs to `~/.config/opencode/skills/spm/`.
+
+### Changed
+- Project renamed to `scholar-paper-cli`: GitHub repo, distribution name, HTTP User-Agent, and default cache path (`~/.local/share/scholar-paper-cli/`). Python package stays `scholar_paper_mcp`; command stays `spm`.
+- `storage/embeddings.py`: heavy imports (`numpy`, `onnxruntime`, `tokenizers`) now lazy — non-embedding commands start ~0.2s instead of ~1s.
+- `tests/test_client.py::test_no_api_key_header_when_not_configured`: now isolates ambient `SPM_API_KEY` (previously failed when the env var was set).
+- `tests/test_docs.py`: README command list sourced from the argparse parser (no drift).
+
+### Removed
+- `server.py` (FastMCP entry + tool wrappers), `fastmcp` dependency, `scholar-paper-mcp` console script (replaced by `spm`), `tests/test_server.py` (25 tests).
+
+### Tests
+- +22 CLI tests (`tests/test_cli.py`).
+- Total: 281 passing.
+
 ### Fixed
 - `models.Paper`: int fields (`citation_count`, `reference_count`, `influential_citation_count`) now coerce `None` to 0 via `field_validator(mode="before")`.
 - `models.Paper`: list fields (`publication_types`, `fields_of_study`, `authors`) and `is_open_access` coerce `None` to safe default.
@@ -25,7 +42,7 @@
 
 ### Tests
 - +6 new tests: null int fields, null lists, null bool, external_ids None filtering, name_similarity None handling, search_authors field filtering, plus 2 stub-paper FK tests.
-- Total: 276 passing (was 266), 1 deselected (`test_no_api_key_header_when_not_configured` requires `SPM_API_KEY` unset in env).
+- Total: 276 passing (was 266).
 
 ## v0.1.0
 

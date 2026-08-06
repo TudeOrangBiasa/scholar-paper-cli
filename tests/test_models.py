@@ -70,7 +70,10 @@ def test_paper_coerces_int_external_id_values() -> None:
         paper_id="abc",
         fetched_at=now,
         ttl_until=now + timedelta(days=30),
-        external_ids={"DOI": "10.1234/abc", "CorpusId": 272999614},  # int!
+        external_ids={
+            "DOI": "10.1234/abc",
+            "CorpusId": 272999614,
+        },  # int!  # ty: ignore[invalid-argument-type]
     )
     assert p.external_ids["DOI"] == "10.1234/abc"
     assert p.external_ids["CorpusId"] == "272999614"  # coerced
@@ -84,11 +87,11 @@ def test_paper_coerces_null_lists_and_bool() -> None:
         paper_id="abc",
         fetched_at=now,
         ttl_until=now + timedelta(days=30),
-        publication_types=None,
-        fields_of_study=None,
-        authors=None,
-        is_open_access=None,
-        external_ids=None,
+        publication_types=None,  # ty: ignore[invalid-argument-type]
+        fields_of_study=None,  # ty: ignore[invalid-argument-type]
+        authors=None,  # ty: ignore[invalid-argument-type]
+        is_open_access=None,  # ty: ignore[invalid-argument-type]
+        external_ids=None,  # ty: ignore[invalid-argument-type]
     )
     assert p.publication_types == []
     assert p.fields_of_study == []
@@ -105,9 +108,9 @@ def test_author_coerces_null_fields() -> None:
         fetched_at=now,
         ttl_until=now + timedelta(days=30),
         name="X",
-        affiliations=None,
-        papers=None,
-        aliases=None,
+        affiliations=None,  # ty: ignore[invalid-argument-type]
+        papers=None,  # ty: ignore[invalid-argument-type]
+        aliases=None,  # ty: ignore[invalid-argument-type]
     )
     assert a.affiliations == []
     assert a.papers == []
@@ -115,7 +118,7 @@ def test_author_coerces_null_fields() -> None:
 
 
 def test_paper_brief_coerces_null_citation_count() -> None:
-    pb = PaperBrief(paper_id="abc", citation_count=None)
+    pb = PaperBrief(paper_id="abc", citation_count=None)  # ty: ignore[invalid-argument-type]
     assert pb.citation_count == 0
 
 
@@ -138,9 +141,9 @@ def test_paper_coerces_null_int_fields() -> None:
         paper_id="abc",
         fetched_at=now,
         ttl_until=now + timedelta(days=30),
-        citation_count=None,
-        reference_count=None,
-        influential_citation_count=None,
+        citation_count=None,  # ty: ignore[invalid-argument-type]
+        reference_count=None,  # ty: ignore[invalid-argument-type]
+        influential_citation_count=None,  # ty: ignore[invalid-argument-type]
     )
     assert p.citation_count == 0
     assert p.reference_count == 0
@@ -154,7 +157,7 @@ def test_external_ids_filters_none_values() -> None:
         paper_id="abc",
         fetched_at=now,
         ttl_until=now + timedelta(days=30),
-        external_ids={"DOI": "10.1234/abc", "CorpusId": None, "ArXiv": None},
+        external_ids={"DOI": "10.1234/abc", "CorpusId": None, "ArXiv": None},  # ty: ignore[invalid-argument-type]
     )
     assert p.external_ids == {"DOI": "10.1234/abc"}
     assert "CorpusId" not in p.external_ids

@@ -1,6 +1,6 @@
 # Install
 
-One-step install for `scholar-paper-mcp`. Suitable for AI agents.
+One-step install for `spm` (scholar-paper-cli). Suitable for AI agents.
 
 ## Requirements
 
@@ -13,47 +13,38 @@ One-step install for `scholar-paper-mcp`. Suitable for AI agents.
 
 ```bash
 # Clone (auto-fetches model via git LFS)
-git clone https://github.com/TudeOrangBiasa/scholar-paper-mcp
-cd scholar-paper-mcp
+git clone https://github.com/TudeOrangBiasa/scholar-paper-cli
+cd scholar-paper-cli
 
 # Install Python deps
 uv sync
 
 # Verify
-uv run pytest -q          # 266 passed, 0 skipped
-uv run python -c "import scholar_paper_mcp; print(scholar_paper_mcp.__version__)"  # 0.1.0
+uv run pytest -q          # all tests pass
+uv run spm --version      # spm 0.1.0
 ```
 
-## Run (stdio transport)
+## Run
 
 ```bash
-uv run python -m scholar_paper_mcp
-# or
-uv run scholar-paper-mcp
+uv run spm --help
+uv run spm search "quantum entanglement" --limit 2
 ```
 
-Server uses stdio. Exits when stdin closes.
+Every command prints JSON to stdout and exits 0. Errors print a JSON error envelope and exit non-zero.
 
-## OpenCode registration
+## Install the skill
 
-Add to `~/.config/opencode/opencode.json`:
+Teach your agent the CLI via the bundled skill:
 
-```json
-{
-  "mcpServers": {
-    "scholar-paper-mcp": {
-      "command": "uv",
-      "args": ["--directory", "/absolute/path/to/scholar-paper-mcp", "run", "scholar-paper-mcp"]
-    }
-  }
-}
+```bash
+mkdir -p ~/.config/opencode/skills/spm
+cp skills/spm/SKILL.md ~/.config/opencode/skills/spm/
 ```
-
-Replace `/absolute/path/to/scholar-paper-mcp` with the clone path. Restart OpenCode.
 
 ## Environment variables
 
-Optional, set before `python -m scholar_paper_mcp`:
+Optional, set before `uv run spm`:
 
 ```bash
 # Higher Semantic Scholar rate limits (free key at https://www.semanticscholar.org/product/api)
@@ -65,15 +56,15 @@ export SPM_OFFLINE_MODE=true
 
 All env vars: see `docs/CONFIGURATION.md`.
 
-## Verify MCP works in OpenCode
+## Verify CLI works
 
-After registration, in OpenCode:
+After install, in a terminal:
 
+```bash
+uv run spm search "quantum entanglement" --limit 1
 ```
-> list 15 papers about quantum entanglement
-```
 
-OpenCode should invoke `search_papers` tool. Check OpenCode logs for MCP server connection.
+Expect JSON output: `{"data": {"query": ..., "total": ...}, "meta": {"source": "api"}}`. Run the same command again and `meta.source` becomes `"cache"`.
 
 ## Project layout (key paths)
 
@@ -81,7 +72,8 @@ OpenCode should invoke `search_papers` tool. Check OpenCode logs for MCP server 
 |------|---------|
 | `models/model_quantized.onnx` | mE5-small int8 ONNX, 113MB, git LFS |
 | `models/tokenizer.json` | XLM-RoBERTa tokenizer, 16MB |
-| `~/.local/share/scholar-paper-mcp/cache.db` | SQLite cache (created at runtime) |
+| `~/.local/share/scholar-paper-cli/cache.db` | SQLite cache (created at runtime) |
+| `skills/spm/SKILL.md` | Agent skill teaching the CLI |
 | `docs/CONFIGURATION.md` | All `SPM_*` env vars |
 | `docs/WORKFLOW.md` | Document-writing integration |
 | `AGENTS.md` | Project conventions (TDD, ponytail, anti-AI-slop) |
@@ -120,7 +112,7 @@ ls -la models/
 
 If files are 0 bytes or pointers, run `git lfs pull`.
 
-**Tests show 9 skipped (model not downloaded)**
+**Tests show skipped (model not downloaded)**
 
 Same as above. LFS not pulled. Run `git lfs pull`.
 
@@ -132,19 +124,19 @@ Without `SPM_API_KEY`: ~100 requests per 5 minutes shared pool. Set key for high
 
 ```bash
 # Remove clone
-rm -rf /path/to/scholar-paper-mcp
+rm -rf /path/to/scholar-paper-cli
 
 # Remove cache
-rm -rf ~/.local/share/scholar-paper-mcp
+rm -rf ~/.local/share/scholar-paper-cli
 
-# Unregister from OpenCode
-# Edit ~/.config/opencode/opencode.json, remove the scholar-paper-mcp entry
+# Remove the skill
+rm -rf ~/.config/opencode/skills/spm
 ```
 
 ## Tests
 
 ```bash
-uv run pytest -q                # all tests, 266 pass, 0 skip
+uv run python -m pytest -q # all tests
 uv run pytest tests/test_docs.py # doc consistency only
 uv run ruff check src tests     # lint
 uv run ty check src tests       # type check

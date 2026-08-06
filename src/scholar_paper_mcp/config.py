@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
     api_key: str | None = Field(default=None, description="Semantic Scholar API key")
     cache_path: Path = Field(
-        default=Path("~/.local/share/scholar-paper-mcp/cache.db"),
+        default=Path("~/.local/share/scholar-paper-cli/cache.db"),
         description="Path to SQLite cache database",
     )
     cache_ttl_days: int = Field(default=30, ge=1, description="Cache TTL in days")

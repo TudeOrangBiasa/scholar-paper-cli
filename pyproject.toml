@@ -1,23 +1,24 @@
 [project]
-name = "scholar-paper-mcp"
+name = "scholar-paper-cli"
 version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.13"
 license = { text = "MIT" }
 authors = [{ name = "TudeStillLearning!" }]
-description = "Hybrid MCP server for Semantic Scholar with persistent cache and offline fallback"
+description = "spm: CLI for Semantic Scholar with persistent cache and offline fallback"
 dependencies = [
-    "fastmcp>=3.4.2",
     "httpx",
     "numpy>=2.0",
     "onnxruntime>=1.27.0",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.7",
     "sqlite-vec>=0.1.9",
     "tokenizers>=0.23.1",
 ]
 
 [project.urls]
-Homepage = "https://github.com/TudeOrangBiasa/scholar-paper-mcp"
-Repository = "https://github.com/TudeOrangBiasa/scholar-paper-mcp"
+Homepage = "https://github.com/TudeOrangBiasa/scholar-paper-cli"
+Repository = "https://github.com/TudeOrangBiasa/scholar-paper-cli"
 
 [build-system]
 requires = ["hatchling"]
@@ -56,12 +57,10 @@ addopts = "-ra -q"
 pythonpath = ["src"]
 
 [project.scripts]
-scholar-paper-mcp = "scholar_paper_mcp.server:main"
+spm = "scholar_paper_mcp.cli:main"
 
 [dependency-groups]
 dev = [
-    "pydantic>=2.10",
-    "pydantic-settings>=2.7",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "ruff>=0.15.20",

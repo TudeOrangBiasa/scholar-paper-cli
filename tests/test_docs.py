@@ -1,24 +1,29 @@
 """Verify documentation stays consistent with code."""
 
-import json
-import re
+import argparse
 from pathlib import Path
 
-import pytest
-
+from scholar_paper_mcp import cli
 from scholar_paper_mcp.config import Settings
 
 
-@pytest.mark.asyncio
-async def test_readme_lists_all_tools() -> None:
-    """README tools table must include all 15 tool names."""
-    from scholar_paper_mcp.server import mcp
+def _subcommand_names(parser: argparse.ArgumentParser) -> list[str]:
+    """Top-level spm subcommand names, sourced from the parser itself."""
+    names: list[str] = []
+    for action in parser._actions:
+        if isinstance(action, argparse._SubParsersAction):
+            names.extend(action.choices)
+    return names
 
+
+def test_readme_lists_all_commands() -> None:
+    """README commands table must include every spm subcommand."""
     readme = Path(__file__).parent.parent / "README.md"
     text = readme.read_text()
-    tools = await mcp.list_tools()
-    for tool in tools:
-        assert tool.name in text, f"tool {tool.name} not in README"
+    commands = _subcommand_names(cli.build_parser())
+    assert len(commands) == 13  # 12 flat + session group
+    for cmd in commands:
+        assert f"spm {cmd}" in text, f"command spm {cmd} not in README"
 
 
 def test_configuration_documents_all_env_vars() -> None:
@@ -31,15 +36,12 @@ def test_configuration_documents_all_env_vars() -> None:
         assert env_var in text, f"{env_var} not in CONFIGURATION.md"
 
 
-def test_opencode_registration_is_valid_json() -> None:
-    """OpenCode JSON snippet in README must parse."""
+def test_readme_has_no_mcp_registration_and_documents_skill() -> None:
+    """README must drop MCP registration and point to the spm skill."""
     readme = Path(__file__).parent.parent / "README.md"
     text = readme.read_text()
-    match = re.search(r"```json\n(.*?)\n```", text, re.DOTALL)
-    assert match, "no ```json``` block in README"
-    parsed = json.loads(match.group(1))
-    assert "mcpServers" in parsed
-    assert "scholar-paper-mcp" in parsed["mcpServers"]
+    assert "mcpServers" not in text
+    assert "skills/spm/SKILL.md" in text
 
 
 def test_agents_md_mentions_current_state() -> None:
@@ -47,6 +49,6 @@ def test_agents_md_mentions_current_state() -> None:
     agents = Path(__file__).parent.parent / "AGENTS.md"
     text = agents.read_text()
     assert "Status" in text
-    assert "15 tools" in text
+    assert "spm" in text
     assert "TDD" in text
     assert "ponytail" in text

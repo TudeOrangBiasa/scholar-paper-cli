@@ -109,7 +109,6 @@ def test_reference_drops_context_intent(conn, now) -> None:
     assert results[0].is_influential is True
 
 
-
 def test_insert_citation_creates_stub_papers(conn, now) -> None:
     """Citation edge should auto-create stub papers for both endpoints."""
     edge = CitationEdge(from_paper_id="unknown1", to_paper_id="unknown2", is_influential=True)

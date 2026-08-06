@@ -68,7 +68,9 @@ class Paper(_Base):
     def _coerce_lists(cls, v: Any) -> Any:
         return _or_default(v, [])
 
-    @field_validator("citation_count", "reference_count", "influential_citation_count", mode="before")
+    @field_validator(
+        "citation_count", "reference_count", "influential_citation_count", mode="before"
+    )
     @classmethod
     def _coerce_ints(cls, v: Any) -> Any:
         return _or_default(v, 0)

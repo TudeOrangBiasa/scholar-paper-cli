@@ -4,6 +4,7 @@ import httpx
 import pytest
 
 from scholar_paper_mcp.api import SemanticScholarClient
+from scholar_paper_mcp.config import get_settings
 from scholar_paper_mcp.exceptions import APINotFoundError, APIRateLimitError, APIServerError
 
 # ── Endpoint path tests ──────────────────────────────────────────
@@ -147,7 +148,11 @@ async def test_sends_api_key_when_configured() -> None:
         await client.search_papers("test")
 
 
-async def test_no_api_key_header_when_not_configured() -> None:
+async def test_no_api_key_header_when_not_configured(monkeypatch) -> None:
+    # Ambient SPM_API_KEY in the shell env must not leak into this test.
+    monkeypatch.delenv("SPM_API_KEY", raising=False)
+    get_settings.cache_clear()
+
     def handler(request: httpx.Request) -> httpx.Response:
         assert "x-api-key" not in request.headers
         return httpx.Response(200, json={})
@@ -251,7 +256,6 @@ def test_semantic_scholar_client_default_rate_matches_ss_limits() -> None:
     # SS unauthenticated: 100 req / 5 min — defaults should be below that
     assert client.limiter.rate <= 1.0
     assert client.limiter.capacity <= 10
-
 
 
 @pytest.mark.asyncio
