@@ -1,4 +1,4 @@
-"""Smoke test for scholar-paper-mcp package."""
+"""Smoke test for scholar-paper-cli package."""
 
 import scholar_paper_mcp
 

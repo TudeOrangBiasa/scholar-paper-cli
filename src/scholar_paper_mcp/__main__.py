@@ -1,4 +1,4 @@
-from scholar_paper_mcp.server import main
+from scholar_paper_mcp.cli import main
 
 if __name__ == "__main__":
     main()

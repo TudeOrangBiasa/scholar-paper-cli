@@ -4,10 +4,6 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-import numpy as np
-import onnxruntime as ort
-from tokenizers import Tokenizer
-
 from scholar_paper_mcp.config import get_settings
 from scholar_paper_mcp.exceptions import EmbeddingInferenceError, EmbeddingModelNotFoundError
 
@@ -16,6 +12,10 @@ class Embedder:
     """mE5-small int8 ONNX embedder. Multilingual, 384-dim, mean-pooled, L2-normalized."""
 
     def __init__(self, model_path: Path, tokenizer_path: Path) -> None:
+        import numpy as np  # noqa: F401  (heavy; imported lazily)
+        import onnxruntime as ort
+        from tokenizers import Tokenizer
+
         if not model_path.exists():
             raise EmbeddingModelNotFoundError(f"model not found: {model_path}")
         if not tokenizer_path.exists():
@@ -29,6 +29,8 @@ class Embedder:
 
     def encode(self, texts: list[str], mode: Literal["query", "passage"]) -> list[list[float]]:
         """Encode texts to 384-dim embeddings. Prepends 'query: ' or 'passage: ' prefix."""
+        import numpy as np
+
         if not texts:
             return []
         prefix = "query: " if mode == "query" else "passage: "
@@ -44,11 +46,14 @@ class Embedder:
                 mask[i, : len(e.ids)] = e.attention_mask
                 if e.type_ids:
                     token_type[i, : len(e.type_ids)] = e.type_ids
-            outputs = self.session.run(None, {
-                "input_ids": ids,
-                "attention_mask": mask,
-                "token_type_ids": token_type,
-            })
+            outputs = self.session.run(
+                None,
+                {
+                    "input_ids": ids,
+                    "attention_mask": mask,
+                    "token_type_ids": token_type,
+                },
+            )
             last_hidden = outputs[0]
             mask_f = mask[:, :, None].astype(np.float32)
             summed = np.sum(last_hidden * mask_f, axis=1)
@@ -70,6 +75,8 @@ def get_embedder() -> Embedder:
 
 def upsert_embedding(conn, paper_id: str, embedding: list[float]) -> None:
     """Store or replace embedding in embeddings_vec virtual table."""
+    import numpy as np
+
     if len(embedding) != 384:
         raise EmbeddingInferenceError(f"expected 384-dim embedding, got {len(embedding)}")
     arr = np.array(embedding, dtype=np.float32).tobytes()
@@ -83,6 +90,8 @@ def upsert_embedding(conn, paper_id: str, embedding: list[float]) -> None:
 
 def knn_search(conn, query_embedding: list[float], k: int = 10) -> list[tuple[str, float]]:
     """KNN search over embeddings_vec. Returns list of (paper_id, distance)."""
+    import numpy as np
+
     if len(query_embedding) != 384:
         raise EmbeddingInferenceError(f"expected 384-dim query, got {len(query_embedding)}")
     arr = np.array(query_embedding, dtype=np.float32)

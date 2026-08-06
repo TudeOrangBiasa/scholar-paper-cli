@@ -1,6 +1,6 @@
 # Configuration
 
-All config via `SPM_*` environment variables. Set in shell, `.env`, or via your MCP client config.
+All config via `SPM_*` environment variables. Set in shell or `.env`.
 
 ## Semantic Scholar API
 
@@ -28,7 +28,7 @@ Override for testing or proxies.
 ### `SPM_CACHE_PATH`
 
 - Type: file path
-- Default: `~/.local/share/scholar-paper-mcp/cache.db`
+- Default: `~/.local/share/scholar-paper-cli/cache.db`
 
 XDG-compatible default. The `~` tilde expands to the home directory.
 
@@ -73,7 +73,7 @@ Grace period before retrying the API after it went offline.
 - Default: `intfloat/multilingual-e5-small`
 - Valid: `intfloat/multilingual-e5-small` or `none`
 
-Set to `none` to disable embeddings. Disables `get_related_papers` KNN search.
+Set to `none` to disable embeddings. Disables `spm related` KNN search.
 
 ## Default limits
 
@@ -83,7 +83,7 @@ Set to `none` to disable embeddings. Disables `get_related_papers` KNN search.
 - Default: 10
 - Valid: 1 to 100
 
-Default number of results for search tools.
+Default result limit for search commands.
 
 ### `SPM_DEFAULT_PAPERS_LIMIT`
 
@@ -91,7 +91,7 @@ Default number of results for search tools.
 - Default: 20
 - Valid: 1 to 100
 
-Default number of papers in detail endpoints.
+Default paper count for detail commands.
 
 ### `SPM_DEFAULT_CITATIONS_LIMIT`
 
@@ -99,4 +99,4 @@ Default number of papers in detail endpoints.
 - Default: 100
 - Valid: 1 to 1000
 
-Default number of citation/reference results.
+Default limit for citation/reference commands.

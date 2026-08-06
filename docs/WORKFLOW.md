@@ -1,6 +1,6 @@
 # Document-writing workflow
 
-scholar-paper-mcp pairs with the `document-writing` skill for academic writing workflows.
+spm pairs with the global `writing-for-agents` skill for academic writing workflows.
 
 ## Use cases
 
@@ -10,10 +10,10 @@ scholar-paper-mcp pairs with the `document-writing` skill for academic writing w
 
 ## Typical flow
 
-1. Search: `search_papers("machine learning interpretability")`
-2. Track interesting results: `add_paper_to_session("manuscript-v1", paper_id)` for each
-3. Review: `list_session_papers_tool("manuscript-v1")`
-4. Export: `export_session_bibtex("manuscript-v1")` returns a BibTeX string
+1. Search: `spm search "machine learning interpretability"`
+2. Track interesting results: `spm session add manuscript-v1 <paper_id>` for each
+3. Review: `spm session list manuscript-v1`
+4. Export: `spm bibtex manuscript-v1` prints a BibTeX string
 5. Paste into your document (manuscript.tex, proposal.md, etc.)
 
 ## Citation style
@@ -22,7 +22,7 @@ Papers come with full metadata. Default BibTeX export uses `@article` entry type
 
 ## Offline mode
 
-If Semantic Scholar is unreachable mid-session, the server falls back to cache. Look for `meta.offline: true` in tool responses to detect this.
+If Semantic Scholar is unreachable mid-session, the CLI falls back to cache. Look for `meta.offline: true` in JSON output to detect this.
 
 For planned offline work, set `SPM_OFFLINE_MODE=true` to skip API calls entirely.
 
@@ -31,7 +31,7 @@ For planned offline work, set `SPM_OFFLINE_MODE=true` to skip API calls entirely
 Embeddings are multilingual (100+ languages). Search in Indonesian:
 
 ```
-search_papers("machine learning interpretabilitas")
+spm search "machine learning interpretabilitas"
 ```
 
 Finds the same papers as English queries. Try the language that matches your source material.

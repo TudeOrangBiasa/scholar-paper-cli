@@ -1,26 +1,26 @@
-# scholar-paper-mcp
+# scholar-paper-cli
 
 ![Banner](docs/banner.png)
 
-Hybrid MCP server for Semantic Scholar. 15 tools, persistent SQLite cache, offline fallback, multilingual semantic search.
+spm — CLI for Semantic Scholar. 15 commands, persistent SQLite cache, offline fallback, multilingual semantic search.
 
-Pairs with document-writing skill for hackathon, proposal, thesis, and article workflows.
+Pairs with the `writing-for-agents` skill for hackathon, proposal, thesis, and article workflows.
 
 ## Features
 
-- 15 tools: paper/author search, details, citations, references, recommendations, related, session tracking, BibTeX export
+- 15 commands: paper/author search, details, citations, references, recommendations, related, session tracking, BibTeX export
 - Persistent SQLite cache with 30-day TTL. Repeat queries cost zero.
 - Offline fallback: when Semantic Scholar is unreachable, return cached data with offline flag.
 - Multilingual semantic search via `intfloat/multilingual-e5-small` (100+ languages including Indonesian).
-- FastMCP stdio transport, OpenCode-compatible.
+- Portable CLI: JSON on stdout, pipeable, scriptable, works in any agent that can run bash and in a plain terminal.
 
 ## Install
 
 Requires Python 3.13 and uv.
 
 ```bash
-git clone https://github.com/TudeOrangBiasa/scholar-paper-mcp
-cd scholar-paper-mcp
+git clone https://github.com/TudeOrangBiasa/scholar-paper-cli
+cd scholar-paper-cli
 uv sync
 
 # Download embedding model (~118MB, one time)
@@ -29,52 +29,45 @@ uv sync
 
 ## Run
 
-Stdio transport, default for MCP clients.
+```bash
+spm --help
+spm search "quantum entanglement" --limit 2
+```
+
+Every command prints a JSON `{"data": ..., "meta": ...}` envelope on stdout. Errors print `{"error": {"type", "message"}}` with a non-zero exit code.
+
+## Skill
+
+Teach your agent the CLI by installing the skill:
 
 ```bash
-python -m scholar_paper_mcp
-# or
-scholar-paper-mcp
+mkdir -p ~/.config/opencode/skills/spm
+cp skills/spm/SKILL.md ~/.config/opencode/skills/spm/
 ```
 
-## OpenCode registration
+The skill documents every command, the output contract, caching semantics, embeddings, and workflow recipes.
 
-Add to OpenCode MCP config (`~/.config/opencode/opencode.json` or equivalent):
+## Commands (15)
 
-```json
-{
-  "mcpServers": {
-    "scholar-paper-mcp": {
-      "command": "uv",
-      "args": ["--directory", "/path/to/scholar-paper-mcp", "run", "scholar-paper-mcp"]
-    }
-  }
-}
-```
+| Command | Flags (defaults) | Description |
+|---------|------------------|-------------|
+| `spm search <query>` | `--limit` (10), `--offset` (0) | Search papers by query |
+| `spm paper <id>` | `--embed` | Get paper by ID, persists + embeds |
+| `spm citations <id>` | `--limit` (100), `--offset` (0) | Papers that cite this paper |
+| `spm references <id>` | `--limit` (100), `--offset` (0) | Papers referenced by this paper |
+| `spm author-search <query>` | `--limit` (10), `--offset` (0) | Search authors by name |
+| `spm author <id>` | — | Get author by ID, persists |
+| `spm author-top <id>` | `--limit` (10) | Top papers by citation count |
+| `spm author-duplicates <query>` | `--limit` (50), `--threshold` (0.8) | Group authors by name similarity |
+| `spm consolidate <canonical> <dup>...` | — | Merge duplicate authors in storage |
+| `spm recommend <id>` | `--limit` (100) | SS API recommendations |
+| `spm related <id>` | `--k` (10) | Local KNN via semantic embeddings |
+| `spm session add <session> <id>` | — | Track paper in working session |
+| `spm session list <session>` | — | List papers in session |
+| `spm session remove <session> <id>` | — | Remove paper from session |
+| `spm bibtex <session>` | — | Export session as BibTeX |
 
-Replace `/path/to/scholar-paper-mcp` with your clone path.
-
-## Tools (15)
-
-| Tool | Description |
-|------|-------------|
-| `search_papers` | Search papers by query |
-| `get_paper_details` | Get paper by ID, persists + embeds |
-| `get_paper_citations` | Papers that cite this paper |
-| `get_paper_references` | Papers referenced by this paper |
-| `search_authors` | Search authors by name |
-| `get_author_details` | Get author by ID, persists |
-| `get_author_top_papers` | Top K papers by citation count |
-| `find_author_duplicates` | Group authors by name similarity |
-| `consolidate_authors` | Merge duplicate authors in storage |
-| `get_paper_recommendations` | SS API recommendations |
-| `get_related_papers` | Local KNN via semantic embeddings |
-| `add_paper_to_session` | Track paper in working session |
-| `list_session_papers_tool` | List papers in session |
-| `remove_from_session_tool` | Remove paper from session |
-| `export_session_bibtex` | Export session as BibTeX string |
-
-Every tool returns a `ToolResponse` with `data` and `meta` (cache metadata: source, cached, offline, fetched_at, ttl_until).
+Every command returns a `ToolResponse` with `data` and `meta` (cache metadata: source, cached, offline, fetched_at, ttl_until).
 
 ## Configuration
 
@@ -86,17 +79,17 @@ See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for all `SPM_*` environment v
 
 [Source drawio file](docs/architecture.drawio) (editable in drawio desktop).
 
-### Tool call flow
+### Command call flow
 
-A tool call follows this sequence:
+A command follows this sequence:
 
-1. **MCP client** (OpenCode) sends tool call over stdio.
-2. **FastMCP server** routes to the matching tool wrapper.
+1. **Shell/agent** runs `spm <command>`.
+2. **cli.py** parses args and assembles state (cache dir, SQLite, API client, optional embedder).
 3. **Tool function** composes `CachedSemanticScholarClient` + storage CRUD + (optionally) embedder.
 4. **Cache check**: fresh hit returns cached data. Stale or miss triggers step 5.
 5. **API call** (if online): SS API via rate-limited, circuit-broken, offline-aware client.
 6. **Persist**: paper, author, citation, session rows written to SQLite. Embedding stored in `embeddings_vec`.
-7. **Wrap**: response enveloped as `ToolResponse[data, meta]`.
+7. **Wrap**: response enveloped as `ToolResponse[data, meta]`, printed as JSON on stdout.
 
 See [docs/PLAN.md](docs/PLAN.md) for the full design rationale.
 
@@ -113,15 +106,15 @@ See [docs/PLAN.md](docs/PLAN.md) for the full plan, [docs/WORKFLOW.md](docs/WORK
 
 ## Status
 
-v0.1.0 feature-complete. 14 of 14 planned issues done. 276 tests pass (0 skip, embedding model bundled). Security review applied: 0 CRITICAL, 0 HIGH, 0 MEDIUM.
+v0.1.0 feature-complete. 14 of 14 planned issues done. Security review applied: 0 CRITICAL, 0 HIGH, 0 MEDIUM.
 
 Future work is open-ended. See [docs/PLAN.md](docs/PLAN.md) for the original plan and the one deferred item: cross-encoder rerank (v3 in the plan, blocked by bundle size and missing Indonesian benchmark for any small multilingual cross-encoder).
 
 ## Acknowledgments
 
 - **Semantic Scholar** (Allen AI) for the Graph API and the public dataset of ~200M academic papers.
-- **[akapet00/semantic-scholar-mcp](https://github.com/akapet00/semantic-scholar-mcp)** for the upstream reference. The 15 tool set mirrors the original.
-- **[FastMCP](https://github.com/jlowin/fastmcp)** for the Python MCP server framework.
+- **[akapet00/semantic-scholar-mcp](https://github.com/akapet00/semantic-scholar-mcp)** for the upstream reference. The 15 command set mirrors the original 15 tools.
+- **argparse (stdlib)** for the CLI interface.
 - Open source libraries: Pydantic, httpx, sqlite-vec, ONNX Runtime, tokenizers, pytest, ruff, ty.
 - Embedding model: [intfloat/multilingual-e5-small](https://huggingface.co/intfloat/multilingual-e5-small) (MIT license).
 

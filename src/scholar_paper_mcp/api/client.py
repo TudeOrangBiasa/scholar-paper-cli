@@ -46,7 +46,7 @@ class SemanticScholarClient:
         self.api_key = api_key if api_key is not None else settings.api_key
         self.limiter = TokenBucket(rate, burst)
         self.breaker = CircuitBreaker(failure_threshold, reset_timeout)
-        headers = {"User-Agent": "scholar-paper-mcp/0.1.0"}
+        headers = {"User-Agent": "scholar-paper-cli/0.1.0"}
         if self.api_key:
             headers["x-api-key"] = self.api_key
         self._client = httpx.AsyncClient(

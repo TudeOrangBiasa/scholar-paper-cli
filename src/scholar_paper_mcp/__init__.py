@@ -1,4 +1,4 @@
-"""Hybrid MCP server for Semantic Scholar with persistent cache."""
+"""spm: CLI for Semantic Scholar with persistent cache and offline fallback."""
 
 from scholar_paper_mcp.config import Settings, get_settings, init_cache_dir
 from scholar_paper_mcp.exceptions import (

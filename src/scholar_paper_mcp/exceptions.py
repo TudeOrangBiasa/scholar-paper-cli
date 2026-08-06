@@ -9,7 +9,7 @@ from typing import Any
 
 
 class ScholarPaperError(Exception):
-    """Root exception for the scholar-paper-mcp package."""
+    """Root exception for the scholar-paper-cli package."""
 
     def __init__(
         self,
