@@ -6,8 +6,8 @@ from pathlib import Path
 
 import sqlite_vec
 
-from scholar_paper_mcp.config import get_settings
-from scholar_paper_mcp.exceptions import CacheError
+from scholar_paper_cli.config import get_settings
+from scholar_paper_cli.exceptions import CacheError
 
 
 def connect(db_path: str | Path | None = None) -> sqlite3.Connection:
@@ -33,13 +33,13 @@ def _user_version(conn: sqlite3.Connection) -> int:
 def apply_migrations(conn: sqlite3.Connection) -> None:
     current = _user_version(conn)
     if current < 1:
-        schema = resources.files("scholar_paper_mcp.storage").joinpath("schema.sql").read_text()
+        schema = resources.files("scholar_paper_cli.storage").joinpath("schema.sql").read_text()
         conn.executescript(schema)
         conn.execute("PRAGMA user_version = 1")
         current = 1
     if current < 2:
         migration = (
-            resources.files("scholar_paper_mcp.storage")
+            resources.files("scholar_paper_cli.storage")
             .joinpath("migrations/002_api_cache.sql")
             .read_text()
         )

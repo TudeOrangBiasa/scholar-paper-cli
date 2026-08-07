@@ -4,7 +4,7 @@ import json
 import struct
 from datetime import datetime
 
-from scholar_paper_mcp.models import AuthorBrief, Paper
+from scholar_paper_cli.models import AuthorBrief, Paper
 
 
 def _embed_to_blob(embedding: list[float] | None) -> bytes | None:

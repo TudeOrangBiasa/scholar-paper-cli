@@ -3,8 +3,8 @@
 import argparse
 from pathlib import Path
 
-from scholar_paper_mcp import cli
-from scholar_paper_mcp.config import Settings
+from scholar_paper_cli import cli
+from scholar_paper_cli.config import Settings
 
 
 def _subcommand_names(parser: argparse.ArgumentParser) -> list[str]:

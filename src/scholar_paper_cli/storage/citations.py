@@ -3,7 +3,7 @@
 import json
 import sqlite3
 
-from scholar_paper_mcp.models import CitationEdge
+from scholar_paper_cli.models import CitationEdge
 
 
 def _ensure_paper_stub(conn: sqlite3.Connection, paper_id: str) -> None:

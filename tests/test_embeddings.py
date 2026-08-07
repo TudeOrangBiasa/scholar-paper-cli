@@ -6,8 +6,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from scholar_paper_mcp.exceptions import EmbeddingInferenceError, EmbeddingModelNotFoundError
-from scholar_paper_mcp.storage.db import apply_migrations, connect
+from scholar_paper_cli.exceptions import EmbeddingInferenceError, EmbeddingModelNotFoundError
+from scholar_paper_cli.storage.db import apply_migrations, connect
 
 MODEL_PATH = Path("models/model_quantized.onnx")
 TOKENIZER_PATH = Path("models/tokenizer.json")
@@ -18,7 +18,7 @@ MODEL_EXISTS = MODEL_PATH.exists() and TOKENIZER_PATH.exists()
 
 
 def test_load_embedder_raises_if_model_missing(tmp_path: Path) -> None:
-    from scholar_paper_mcp.storage.embeddings import Embedder
+    from scholar_paper_cli.storage.embeddings import Embedder
 
     missing = tmp_path / "nonexistent.onnx"
     tok = tmp_path / "dummy.json"
@@ -28,7 +28,7 @@ def test_load_embedder_raises_if_model_missing(tmp_path: Path) -> None:
 
 
 def test_embedder_raises_model_not_found_for_corrupt_model(tmp_path: Path) -> None:
-    from scholar_paper_mcp.storage.embeddings import Embedder
+    from scholar_paper_cli.storage.embeddings import Embedder
 
     fake = tmp_path / "model.onnx"
     fake.write_bytes(b"not a real onnx model")
@@ -39,7 +39,7 @@ def test_embedder_raises_model_not_found_for_corrupt_model(tmp_path: Path) -> No
 
 
 def test_load_embedder_raises_if_tokenizer_missing(tmp_path: Path) -> None:
-    from scholar_paper_mcp.storage.embeddings import Embedder
+    from scholar_paper_cli.storage.embeddings import Embedder
 
     model = tmp_path / "dummy.onnx"
     model.write_text("dummy")
@@ -49,7 +49,7 @@ def test_load_embedder_raises_if_tokenizer_missing(tmp_path: Path) -> None:
 
 
 def test_upsert_embedding_wrong_dim_raises(tmp_path: Path) -> None:
-    from scholar_paper_mcp.storage.embeddings import upsert_embedding
+    from scholar_paper_cli.storage.embeddings import upsert_embedding
 
     conn = connect(tmp_path / "test.db")
     apply_migrations(conn)
@@ -61,7 +61,7 @@ def test_upsert_embedding_wrong_dim_raises(tmp_path: Path) -> None:
 
 
 def test_knn_search_wrong_dim_raises(tmp_path: Path) -> None:
-    from scholar_paper_mcp.storage.embeddings import knn_search
+    from scholar_paper_cli.storage.embeddings import knn_search
 
     conn = connect(tmp_path / "test.db")
     apply_migrations(conn)
@@ -73,7 +73,7 @@ def test_knn_search_wrong_dim_raises(tmp_path: Path) -> None:
 
 
 def test_upsert_embedding_then_knn_search_roundtrips(tmp_path: Path) -> None:
-    from scholar_paper_mcp.storage.embeddings import knn_search, upsert_embedding
+    from scholar_paper_cli.storage.embeddings import knn_search, upsert_embedding
 
     conn = connect(tmp_path / "test.db")
     apply_migrations(conn)
@@ -90,7 +90,7 @@ def test_upsert_embedding_then_knn_search_roundtrips(tmp_path: Path) -> None:
 
 
 def test_upsert_embedding_replaces_existing(tmp_path: Path) -> None:
-    from scholar_paper_mcp.storage.embeddings import knn_search, upsert_embedding
+    from scholar_paper_cli.storage.embeddings import knn_search, upsert_embedding
 
     conn = connect(tmp_path / "test.db")
     apply_migrations(conn)
@@ -108,7 +108,7 @@ def test_upsert_embedding_replaces_existing(tmp_path: Path) -> None:
 
 
 def test_knn_search_returns_empty_for_no_match(tmp_path: Path) -> None:
-    from scholar_paper_mcp.storage.embeddings import knn_search
+    from scholar_paper_cli.storage.embeddings import knn_search
 
     conn = connect(tmp_path / "test.db")
     apply_migrations(conn)
@@ -124,7 +124,7 @@ def test_knn_search_returns_empty_for_no_match(tmp_path: Path) -> None:
 
 @pytest.mark.skipif(not MODEL_EXISTS, reason="mE5 model not downloaded")
 def test_load_embedder_loads_real_model() -> None:
-    from scholar_paper_mcp.storage.embeddings import Embedder
+    from scholar_paper_cli.storage.embeddings import Embedder
 
     embedder = Embedder(MODEL_PATH, TOKENIZER_PATH)
     assert embedder.dim == 384
@@ -134,7 +134,7 @@ def test_load_embedder_loads_real_model() -> None:
 
 @pytest.mark.skipif(not MODEL_EXISTS, reason="mE5 model not downloaded")
 def test_encode_query_adds_query_prefix() -> None:
-    from scholar_paper_mcp.storage.embeddings import Embedder
+    from scholar_paper_cli.storage.embeddings import Embedder
 
     embedder = Embedder(MODEL_PATH, TOKENIZER_PATH)
     tokens = embedder.tokenizer.encode("query: hello")
@@ -146,7 +146,7 @@ def test_encode_query_adds_query_prefix() -> None:
 
 @pytest.mark.skipif(not MODEL_EXISTS, reason="mE5 model not downloaded")
 def test_encode_passage_adds_passage_prefix() -> None:
-    from scholar_paper_mcp.storage.embeddings import Embedder
+    from scholar_paper_cli.storage.embeddings import Embedder
 
     embedder = Embedder(MODEL_PATH, TOKENIZER_PATH)
     tokens = embedder.tokenizer.encode("passage: hello")
@@ -157,7 +157,7 @@ def test_encode_passage_adds_passage_prefix() -> None:
 
 @pytest.mark.skipif(not MODEL_EXISTS, reason="mE5 model not downloaded")
 def test_encode_returns_384_dim_vectors() -> None:
-    from scholar_paper_mcp.storage.embeddings import Embedder
+    from scholar_paper_cli.storage.embeddings import Embedder
 
     embedder = Embedder(MODEL_PATH, TOKENIZER_PATH)
     result = embedder.encode(["hello world"], mode="query")
@@ -167,7 +167,7 @@ def test_encode_returns_384_dim_vectors() -> None:
 
 @pytest.mark.skipif(not MODEL_EXISTS, reason="mE5 model not downloaded")
 def test_encode_batch_returns_same_count_as_input() -> None:
-    from scholar_paper_mcp.storage.embeddings import Embedder
+    from scholar_paper_cli.storage.embeddings import Embedder
 
     embedder = Embedder(MODEL_PATH, TOKENIZER_PATH)
     texts = ["hello", "world", "test"]
@@ -179,7 +179,7 @@ def test_encode_batch_returns_same_count_as_input() -> None:
 
 @pytest.mark.skipif(not MODEL_EXISTS, reason="mE5 model not downloaded")
 def test_encode_empty_input_returns_empty_list() -> None:
-    from scholar_paper_mcp.storage.embeddings import Embedder
+    from scholar_paper_cli.storage.embeddings import Embedder
 
     embedder = Embedder(MODEL_PATH, TOKENIZER_PATH)
     result = embedder.encode([], mode="query")
@@ -188,7 +188,7 @@ def test_encode_empty_input_returns_empty_list() -> None:
 
 @pytest.mark.skipif(not MODEL_EXISTS, reason="mE5 model not downloaded")
 def test_encoded_vectors_are_l2_normalized() -> None:
-    from scholar_paper_mcp.storage.embeddings import Embedder
+    from scholar_paper_cli.storage.embeddings import Embedder
 
     embedder = Embedder(MODEL_PATH, TOKENIZER_PATH)
     result = embedder.encode(["hello world"], mode="query")
@@ -199,7 +199,7 @@ def test_encoded_vectors_are_l2_normalized() -> None:
 
 @pytest.mark.skipif(not MODEL_EXISTS, reason="mE5 model not downloaded")
 def test_knn_search_finds_known_similar(tmp_path: Path) -> None:
-    from scholar_paper_mcp.storage.embeddings import Embedder, knn_search, upsert_embedding
+    from scholar_paper_cli.storage.embeddings import Embedder, knn_search, upsert_embedding
 
     embedder = Embedder(MODEL_PATH, TOKENIZER_PATH)
     conn = connect(tmp_path / "test.db")
@@ -222,7 +222,7 @@ def test_knn_search_finds_known_similar(tmp_path: Path) -> None:
 
 @pytest.mark.skipif(not MODEL_EXISTS, reason="mE5 model not downloaded")
 def test_knn_search_ranks_similar_higher_than_dissimilar(tmp_path: Path) -> None:
-    from scholar_paper_mcp.storage.embeddings import Embedder, knn_search, upsert_embedding
+    from scholar_paper_cli.storage.embeddings import Embedder, knn_search, upsert_embedding
 
     embedder = Embedder(MODEL_PATH, TOKENIZER_PATH)
     conn = connect(tmp_path / "test.db")

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from scholar_paper_mcp.storage.db import apply_migrations, connect
+from scholar_paper_cli.storage.db import apply_migrations, connect
 
 
 @pytest.fixture

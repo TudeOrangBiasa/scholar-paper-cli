@@ -8,11 +8,11 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from scholar_paper_mcp.exceptions import APINotFoundError
-from scholar_paper_mcp.models import Author, CacheMetadata, PaperBrief
-from scholar_paper_mcp.storage.cache import CachedSemanticScholarClient
-from scholar_paper_mcp.storage.db import apply_migrations, connect
-from scholar_paper_mcp.tools.authors import (
+from scholar_paper_cli.exceptions import APINotFoundError
+from scholar_paper_cli.models import Author, CacheMetadata, PaperBrief
+from scholar_paper_cli.storage.cache import CachedSemanticScholarClient
+from scholar_paper_cli.storage.db import apply_migrations, connect
+from scholar_paper_cli.tools.authors import (
     consolidate_authors,
     find_author_duplicates,
     get_author_details,
@@ -104,7 +104,7 @@ async def test_get_author_details_returns_author(conn) -> None:
 
 @pytest.mark.asyncio
 async def test_get_author_details_persists_to_db(conn) -> None:
-    from scholar_paper_mcp.storage.authors import get_author as get_author_from_db
+    from scholar_paper_cli.storage.authors import get_author as get_author_from_db
 
     client = _make_client(SAMPLE_AUTHOR)
     await get_author_details(client, conn, "a1")
@@ -177,10 +177,10 @@ async def test_find_duplicates_returns_empty_when_none(conn) -> None:
 
 @pytest.mark.asyncio
 async def test_consolidate_merges_aliases_and_papers(conn) -> None:
-    from scholar_paper_mcp.storage.authors import (
+    from scholar_paper_cli.storage.authors import (
         get_author as get_author_db,
     )
-    from scholar_paper_mcp.storage.authors import (
+    from scholar_paper_cli.storage.authors import (
         upsert_author as upsert_author_db,
     )
 
@@ -202,9 +202,9 @@ async def test_consolidate_merges_aliases_and_papers(conn) -> None:
 
 @pytest.mark.asyncio
 async def test_consolidate_updates_paper_authors_links(conn) -> None:
-    from scholar_paper_mcp.models import Paper
-    from scholar_paper_mcp.storage.authors import upsert_author as upsert_author_db
-    from scholar_paper_mcp.storage.papers import link_paper_author, upsert_paper
+    from scholar_paper_cli.models import Paper
+    from scholar_paper_cli.storage.authors import upsert_author as upsert_author_db
+    from scholar_paper_cli.storage.papers import link_paper_author, upsert_paper
 
     now = datetime.now(UTC)
     p1 = Paper(paper_id="p1", title="P1", fetched_at=now, ttl_until=now + timedelta(days=30))
@@ -231,7 +231,7 @@ async def test_consolidate_missing_canonical_raises(conn) -> None:
 
 @pytest.mark.asyncio
 async def test_consolidate_skips_missing_duplicates(conn) -> None:
-    from scholar_paper_mcp.storage.authors import upsert_author as upsert_author_db
+    from scholar_paper_cli.storage.authors import upsert_author as upsert_author_db
 
     upsert_author_db(conn, _make_author("canon", "Alice", papers=[PaperBrief(paper_id="p1")]))
     result = await consolidate_authors(conn, "canon", ["nonexistent_dup"])
@@ -240,7 +240,7 @@ async def test_consolidate_skips_missing_duplicates(conn) -> None:
 
 def test_name_similarity_handles_none() -> None:
     """Name similarity must accept None inputs without crashing."""
-    from scholar_paper_mcp.tools.authors import _name_similarity
+    from scholar_paper_cli.tools.authors import _name_similarity
 
     assert _name_similarity(None, "John") == 0.0
     assert _name_similarity("John", None) == 0.0

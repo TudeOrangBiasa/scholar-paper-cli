@@ -3,9 +3,9 @@
 import httpx
 import pytest
 
-from scholar_paper_mcp.api import SemanticScholarClient
-from scholar_paper_mcp.config import get_settings
-from scholar_paper_mcp.exceptions import APINotFoundError, APIRateLimitError, APIServerError
+from scholar_paper_cli.api import SemanticScholarClient
+from scholar_paper_cli.config import get_settings
+from scholar_paper_cli.exceptions import APINotFoundError, APIRateLimitError, APIServerError
 
 # ── Endpoint path tests ──────────────────────────────────────────
 
@@ -261,7 +261,7 @@ def test_semantic_scholar_client_default_rate_matches_ss_limits() -> None:
 @pytest.mark.asyncio
 async def test_search_authors_omits_unsupported_fields() -> None:
     """S2 /author/search rejects aliases+papers; client must not send them."""
-    from scholar_paper_mcp.api.client import DEFAULT_AUTHOR_SEARCH_FIELDS
+    from scholar_paper_cli.api.client import DEFAULT_AUTHOR_SEARCH_FIELDS
 
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/author/search"

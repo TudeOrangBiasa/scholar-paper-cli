@@ -8,11 +8,11 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from scholar_paper_mcp.models import CacheMetadata, Paper
-from scholar_paper_mcp.storage.cache import CachedSemanticScholarClient
-from scholar_paper_mcp.storage.db import apply_migrations, connect
-from scholar_paper_mcp.storage.embeddings import Embedder, upsert_embedding
-from scholar_paper_mcp.tools.recommendations import (
+from scholar_paper_cli.models import CacheMetadata, Paper
+from scholar_paper_cli.storage.cache import CachedSemanticScholarClient
+from scholar_paper_cli.storage.db import apply_migrations, connect
+from scholar_paper_cli.storage.embeddings import Embedder, upsert_embedding
+from scholar_paper_cli.tools.recommendations import (
     get_paper_recommendations,
     get_related_papers,
 )
@@ -39,7 +39,7 @@ def _seed_paper_with_embedding(conn, paper_id, embedding, abstract="abs") -> Non
         fetched_at=now,
         ttl_until=now + timedelta(days=30),
     )
-    from scholar_paper_mcp.storage.papers import upsert_paper
+    from scholar_paper_cli.storage.papers import upsert_paper
 
     upsert_paper(conn, paper)
     upsert_embedding(conn, paper_id, embedding)
@@ -128,7 +128,7 @@ async def test_related_papers_fetches_target_when_not_in_db(conn) -> None:
 
 @pytest.mark.asyncio
 async def test_related_papers_raises_without_embedder(conn) -> None:
-    from scholar_paper_mcp.exceptions import EmbeddingError
+    from scholar_paper_cli.exceptions import EmbeddingError
 
     client = AsyncMock(spec=CachedSemanticScholarClient)
     with pytest.raises(EmbeddingError):
@@ -137,7 +137,7 @@ async def test_related_papers_raises_without_embedder(conn) -> None:
 
 @pytest.mark.asyncio
 async def test_related_papers_fetches_full_paper_for_related_ids(conn) -> None:
-    from scholar_paper_mcp.storage.embeddings import upsert_embedding as ups_emb
+    from scholar_paper_cli.storage.embeddings import upsert_embedding as ups_emb
 
     _seed_paper_with_embedding(conn, "src", _unit_vec(0))
     # Embedding without a papers row — KNN finds it, but get_paper from DB misses

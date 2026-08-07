@@ -3,7 +3,7 @@
 import sqlite3
 from pathlib import Path
 
-from scholar_paper_mcp.storage.db import apply_migrations, connect
+from scholar_paper_cli.storage.db import apply_migrations, connect
 
 
 def test_connect_opens_database_file(tmp_path: Path) -> None:

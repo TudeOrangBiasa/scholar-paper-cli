@@ -4,8 +4,8 @@ import time
 
 import pytest
 
-from scholar_paper_mcp.api.circuit_breaker import CircuitBreaker
-from scholar_paper_mcp.exceptions import APIServerError
+from scholar_paper_cli.api.circuit_breaker import CircuitBreaker
+from scholar_paper_cli.exceptions import APIServerError
 
 
 async def test_initial_state_closed() -> None:

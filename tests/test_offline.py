@@ -5,7 +5,7 @@ import asyncio
 import httpx
 import pytest
 
-from scholar_paper_mcp.api.offline import OfflineDetector
+from scholar_paper_cli.api.offline import OfflineDetector
 
 
 def _make_client(handler) -> httpx.AsyncClient:

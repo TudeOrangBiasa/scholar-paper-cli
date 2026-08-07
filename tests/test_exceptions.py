@@ -1,6 +1,6 @@
 """Tests for exceptions module."""
 
-from scholar_paper_mcp.exceptions import (
+from scholar_paper_cli.exceptions import (
     APIError,
     APINotFoundError,
     APIRateLimitError,

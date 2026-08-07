@@ -3,13 +3,13 @@
 from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
-from scholar_paper_mcp.exceptions import EmbeddingError
-from scholar_paper_mcp.models import CacheMetadata, Paper, PaperSearchResult, ToolResponse
-from scholar_paper_mcp.storage.cache import CachedSemanticScholarClient
-from scholar_paper_mcp.storage.embeddings import Embedder, knn_search, upsert_embedding
-from scholar_paper_mcp.storage.papers import get_paper as _get_paper_from_db
-from scholar_paper_mcp.storage.papers import upsert_paper
-from scholar_paper_mcp.tools.papers import _parse_paper
+from scholar_paper_cli.exceptions import EmbeddingError
+from scholar_paper_cli.models import CacheMetadata, Paper, PaperSearchResult, ToolResponse
+from scholar_paper_cli.storage.cache import CachedSemanticScholarClient
+from scholar_paper_cli.storage.embeddings import Embedder, knn_search, upsert_embedding
+from scholar_paper_cli.storage.papers import get_paper as _get_paper_from_db
+from scholar_paper_cli.storage.papers import upsert_paper
+from scholar_paper_cli.tools.papers import _parse_paper
 
 
 def _meta(source: Literal["cache", "api", "offline_cache", "embeddings"] = "api") -> CacheMetadata:

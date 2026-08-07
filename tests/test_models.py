@@ -6,7 +6,7 @@ from typing import Literal, cast
 import pytest
 from pydantic import HttpUrl, ValidationError
 
-from scholar_paper_mcp.models import (
+from scholar_paper_cli.models import (
     Author,
     AuthorBrief,
     AuthorSearchResult,

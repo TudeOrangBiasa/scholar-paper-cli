@@ -4,24 +4,24 @@ from datetime import UTC, datetime, timedelta
 from difflib import SequenceMatcher
 from typing import Any, Literal
 
-from scholar_paper_mcp.exceptions import APINotFoundError
-from scholar_paper_mcp.models import (
+from scholar_paper_cli.exceptions import APINotFoundError
+from scholar_paper_cli.models import (
     Author,
     AuthorSearchResult,
     CacheMetadata,
     PaperBrief,
     ToolResponse,
 )
-from scholar_paper_mcp.storage.authors import (
+from scholar_paper_cli.storage.authors import (
     delete_author as _delete_author_from_db,
 )
-from scholar_paper_mcp.storage.authors import (
+from scholar_paper_cli.storage.authors import (
     get_author as _get_author_from_db,
 )
-from scholar_paper_mcp.storage.authors import (
+from scholar_paper_cli.storage.authors import (
     upsert_author as _upsert_author_to_db,
 )
-from scholar_paper_mcp.storage.cache import CachedSemanticScholarClient
+from scholar_paper_cli.storage.cache import CachedSemanticScholarClient
 
 # ── SS response parsers ─────────────────────────────────────────
 

@@ -5,20 +5,20 @@ from typing import Any
 
 from pydantic import HttpUrl
 
-from scholar_paper_mcp.models import (
+from scholar_paper_cli.models import (
     AuthorBrief,
     CitationEdge,
     Paper,
     PaperSearchResult,
     ToolResponse,
 )
-from scholar_paper_mcp.storage.cache import CachedSemanticScholarClient
-from scholar_paper_mcp.storage.citations import (
+from scholar_paper_cli.storage.cache import CachedSemanticScholarClient
+from scholar_paper_cli.storage.citations import (
     insert_citation,
     insert_reference,
 )
-from scholar_paper_mcp.storage.embeddings import Embedder, upsert_embedding
-from scholar_paper_mcp.storage.papers import upsert_paper
+from scholar_paper_cli.storage.embeddings import Embedder, upsert_embedding
+from scholar_paper_cli.storage.papers import upsert_paper
 
 # ── SS response parsers ─────────────────────────────────────────
 

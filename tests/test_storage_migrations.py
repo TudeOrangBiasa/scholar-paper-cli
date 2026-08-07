@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from scholar_paper_mcp.storage.db import apply_migrations, connect
+from scholar_paper_cli.storage.db import apply_migrations, connect
 
 
 def test_fresh_db_has_api_cache_table(tmp_path: Path) -> None:

@@ -1,8 +1,8 @@
 """Tests for storage.sessions CRUD."""
 
-from scholar_paper_mcp.models import Paper
-from scholar_paper_mcp.storage.papers import upsert_paper
-from scholar_paper_mcp.storage.sessions import (
+from scholar_paper_cli.models import Paper
+from scholar_paper_cli.storage.papers import upsert_paper
+from scholar_paper_cli.storage.sessions import (
     add_to_session,
     clear_session,
     list_session_papers,

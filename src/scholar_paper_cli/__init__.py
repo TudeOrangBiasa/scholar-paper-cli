@@ -1,7 +1,7 @@
 """spm: CLI for Semantic Scholar with persistent cache and offline fallback."""
 
-from scholar_paper_mcp.config import Settings, get_settings, init_cache_dir
-from scholar_paper_mcp.exceptions import (
+from scholar_paper_cli.config import Settings, get_settings, init_cache_dir
+from scholar_paper_cli.exceptions import (
     APIError,
     APINotFoundError,
     APIRateLimitError,
@@ -16,7 +16,7 @@ from scholar_paper_mcp.exceptions import (
     OfflineError,
     ScholarPaperError,
 )
-from scholar_paper_mcp.models import (
+from scholar_paper_cli.models import (
     Author,
     AuthorBrief,
     AuthorSearchResult,

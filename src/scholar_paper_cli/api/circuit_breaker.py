@@ -3,7 +3,7 @@
 import asyncio
 import time
 
-from scholar_paper_mcp.exceptions import APIServerError
+from scholar_paper_cli.exceptions import APIServerError
 
 
 class CircuitBreaker:

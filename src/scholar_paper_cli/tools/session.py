@@ -3,24 +3,24 @@
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
-from scholar_paper_mcp.models import CacheMetadata, Paper, ToolResponse
-from scholar_paper_mcp.storage.cache import CachedSemanticScholarClient
-from scholar_paper_mcp.storage.papers import (
+from scholar_paper_cli.models import CacheMetadata, Paper, ToolResponse
+from scholar_paper_cli.storage.cache import CachedSemanticScholarClient
+from scholar_paper_cli.storage.papers import (
     get_paper as _get_paper_from_db,
 )
-from scholar_paper_mcp.storage.papers import (
+from scholar_paper_cli.storage.papers import (
     upsert_paper,
 )
-from scholar_paper_mcp.storage.sessions import (
+from scholar_paper_cli.storage.sessions import (
     add_to_session as _add_to_session,
 )
-from scholar_paper_mcp.storage.sessions import (
+from scholar_paper_cli.storage.sessions import (
     list_session_papers as _list_session_paper_ids,
 )
-from scholar_paper_mcp.storage.sessions import (
+from scholar_paper_cli.storage.sessions import (
     remove_from_session as _remove_from_session,
 )
-from scholar_paper_mcp.tools.papers import _parse_paper
+from scholar_paper_cli.tools.papers import _parse_paper
 
 
 def _meta(source: Literal["cache", "api", "offline_cache", "embeddings"]) -> CacheMetadata:

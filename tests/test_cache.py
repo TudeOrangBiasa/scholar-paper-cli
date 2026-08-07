@@ -7,16 +7,16 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from scholar_paper_mcp.api.client import SemanticScholarClient
-from scholar_paper_mcp.api.offline import OfflineDetector
-from scholar_paper_mcp.exceptions import (
+from scholar_paper_cli.api.client import SemanticScholarClient
+from scholar_paper_cli.api.offline import OfflineDetector
+from scholar_paper_cli.exceptions import (
     APIRateLimitError,
     APIServerError,
     APITimeoutError,
     OfflineError,
 )
-from scholar_paper_mcp.storage.cache import CachedSemanticScholarClient, make_cache_key
-from scholar_paper_mcp.storage.db import apply_migrations, connect
+from scholar_paper_cli.storage.cache import CachedSemanticScholarClient, make_cache_key
+from scholar_paper_cli.storage.db import apply_migrations, connect
 
 # ── make_cache_key tests ──────────────────────────────────────────
 

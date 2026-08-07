@@ -5,9 +5,9 @@ from datetime import timedelta
 import pytest
 from pydantic import HttpUrl
 
-from scholar_paper_mcp.models import Author, AuthorBrief, Paper
-from scholar_paper_mcp.storage.db import apply_migrations, connect
-from scholar_paper_mcp.storage.papers import (
+from scholar_paper_cli.models import Author, AuthorBrief, Paper
+from scholar_paper_cli.storage.db import apply_migrations, connect
+from scholar_paper_cli.storage.papers import (
     count_papers,
     delete_paper,
     get_paper,
@@ -147,7 +147,7 @@ def test_count_papers(conn, now) -> None:
 
 
 def _seed_author(conn, author_id: str, now) -> None:
-    from scholar_paper_mcp.storage.authors import upsert_author
+    from scholar_paper_cli.storage.authors import upsert_author
 
     upsert_author(conn, Author(author_id=author_id, name=author_id, fetched_at=now, ttl_until=now))
 
@@ -228,7 +228,7 @@ def test_delete_paper_persists_across_connection_close(tmp_path) -> None:
 
 
 def test_delete_paper_removes_embedding(tmp_path) -> None:
-    from scholar_paper_mcp.storage.embeddings import knn_search, upsert_embedding
+    from scholar_paper_cli.storage.embeddings import knn_search, upsert_embedding
 
     db = tmp_path / "test.db"
     conn1 = connect(db)
@@ -252,8 +252,8 @@ def test_link_unlink_paper_author_persists_across_connection_close(tmp_path) -> 
 
     now = datetime.now(UTC)
     upsert_paper(conn1, Paper(paper_id="p1", fetched_at=now, ttl_until=now + timedelta(days=30)))
-    from scholar_paper_mcp.models import Author
-    from scholar_paper_mcp.storage.authors import upsert_author
+    from scholar_paper_cli.models import Author
+    from scholar_paper_cli.storage.authors import upsert_author
 
     upsert_author(
         conn1, Author(author_id="a1", name="A", fetched_at=now, ttl_until=now + timedelta(days=30))

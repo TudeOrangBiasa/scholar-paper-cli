@@ -4,8 +4,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from scholar_paper_mcp.config import get_settings
-from scholar_paper_mcp.exceptions import EmbeddingInferenceError, EmbeddingModelNotFoundError
+from scholar_paper_cli.config import get_settings
+from scholar_paper_cli.exceptions import EmbeddingInferenceError, EmbeddingModelNotFoundError
 
 
 class Embedder:

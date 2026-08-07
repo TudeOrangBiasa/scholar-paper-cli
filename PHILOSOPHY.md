@@ -46,7 +46,7 @@ Degradation is documented, not accidental: if the model files are missing, `spm 
 
 - The CLI is argparse from the stdlib. No click, no typer, no dependency for a flag parser.
 - Bare-minimum UX: no colors, spinners, or prompts. The CLI serves agents first.
-- One command (`spm`), one skill (`skills/spm/SKILL.md`), one package (`scholar_paper_mcp`), 15 subcommands that mirror the original tool set so nothing learned before is lost.
+- One command (`spm`), one skill (`skills/spm/SKILL.md`), one package (`scholar_paper_cli`), 15 subcommands that mirror the original tool set so nothing learned before is lost.
 - `--embed` is a flag on `spm paper` only. A global flag would be dead code on 14 of 15 commands.
 
 ## Engineering practice

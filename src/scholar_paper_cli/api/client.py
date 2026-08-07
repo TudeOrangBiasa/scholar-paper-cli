@@ -5,10 +5,10 @@ from typing import Any
 
 import httpx
 
-from scholar_paper_mcp.api.circuit_breaker import CircuitBreaker
-from scholar_paper_mcp.api.rate_limiter import TokenBucket
-from scholar_paper_mcp.config import get_settings
-from scholar_paper_mcp.exceptions import APINotFoundError, APIRateLimitError, APIServerError
+from scholar_paper_cli.api.circuit_breaker import CircuitBreaker
+from scholar_paper_cli.api.rate_limiter import TokenBucket
+from scholar_paper_cli.config import get_settings
+from scholar_paper_cli.exceptions import APINotFoundError, APIRateLimitError, APIServerError
 
 _ID_PATTERN = re.compile(r"^[A-Za-z0-9._:\-]+$")
 

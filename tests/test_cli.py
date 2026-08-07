@@ -8,13 +8,13 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from scholar_paper_mcp import cli
-from scholar_paper_mcp.exceptions import OfflineError
-from scholar_paper_mcp.models import Author, CacheMetadata, Paper
-from scholar_paper_mcp.storage.authors import upsert_author as upsert_author_db
-from scholar_paper_mcp.storage.cache import CachedSemanticScholarClient
-from scholar_paper_mcp.storage.papers import upsert_paper
-from scholar_paper_mcp.storage.sessions import add_to_session
+from scholar_paper_cli import cli
+from scholar_paper_cli.exceptions import OfflineError
+from scholar_paper_cli.models import Author, CacheMetadata, Paper
+from scholar_paper_cli.storage.authors import upsert_author as upsert_author_db
+from scholar_paper_cli.storage.cache import CachedSemanticScholarClient
+from scholar_paper_cli.storage.papers import upsert_paper
+from scholar_paper_cli.storage.sessions import add_to_session
 from tests.test_papers_tools import SAMPLE_PAPER_DATA
 
 COMMANDS = [

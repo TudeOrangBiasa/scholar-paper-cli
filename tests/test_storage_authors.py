@@ -2,8 +2,8 @@
 
 from datetime import timedelta
 
-from scholar_paper_mcp.models import Author, PaperBrief
-from scholar_paper_mcp.storage.authors import (
+from scholar_paper_cli.models import Author, PaperBrief
+from scholar_paper_cli.storage.authors import (
     count_authors,
     get_author,
     list_authors,

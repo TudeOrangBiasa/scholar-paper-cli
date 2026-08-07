@@ -1,6 +1,6 @@
 """Tests for storage.fts — FTS5 lexical search."""
 
-from scholar_paper_mcp.storage.db import apply_migrations, connect
+from scholar_paper_cli.storage.db import apply_migrations, connect
 
 
 def _seed_paper(conn, paper_id: str, title: str = "", abstract: str = "") -> None:
@@ -12,7 +12,7 @@ def _seed_paper(conn, paper_id: str, title: str = "", abstract: str = "") -> Non
 
 
 def test_fts_search_finds_exact_word_match(tmp_path) -> None:
-    from scholar_paper_mcp.storage.fts import fts_search
+    from scholar_paper_cli.storage.fts import fts_search
 
     conn = connect(tmp_path / "test.db")
     apply_migrations(conn)
@@ -23,7 +23,7 @@ def test_fts_search_finds_exact_word_match(tmp_path) -> None:
 
 
 def test_fts_search_finds_abstract_match(tmp_path) -> None:
-    from scholar_paper_mcp.storage.fts import fts_search
+    from scholar_paper_cli.storage.fts import fts_search
 
     conn = connect(tmp_path / "test.db")
     apply_migrations(conn)
@@ -34,7 +34,7 @@ def test_fts_search_finds_abstract_match(tmp_path) -> None:
 
 
 def test_fts_search_returns_empty_for_no_match(tmp_path) -> None:
-    from scholar_paper_mcp.storage.fts import fts_search
+    from scholar_paper_cli.storage.fts import fts_search
 
     conn = connect(tmp_path / "test.db")
     apply_migrations(conn)
@@ -45,7 +45,7 @@ def test_fts_search_returns_empty_for_no_match(tmp_path) -> None:
 
 
 def test_fts_search_sanitizes_special_chars(tmp_path) -> None:
-    from scholar_paper_mcp.storage.fts import fts_search
+    from scholar_paper_cli.storage.fts import fts_search
 
     conn = connect(tmp_path / "test.db")
     apply_migrations(conn)
@@ -57,7 +57,7 @@ def test_fts_search_sanitizes_special_chars(tmp_path) -> None:
 
 
 def test_fts_search_returns_empty_for_empty_query(tmp_path) -> None:
-    from scholar_paper_mcp.storage.fts import fts_search
+    from scholar_paper_cli.storage.fts import fts_search
 
     conn = connect(tmp_path / "test.db")
     apply_migrations(conn)
@@ -68,7 +68,7 @@ def test_fts_search_returns_empty_for_empty_query(tmp_path) -> None:
 
 
 def test_fts_search_returns_empty_for_whitespace_query(tmp_path) -> None:
-    from scholar_paper_mcp.storage.fts import fts_search
+    from scholar_paper_cli.storage.fts import fts_search
 
     conn = connect(tmp_path / "test.db")
     apply_migrations(conn)
@@ -79,7 +79,7 @@ def test_fts_search_returns_empty_for_whitespace_query(tmp_path) -> None:
 
 
 def test_fts_search_respects_limit(tmp_path) -> None:
-    from scholar_paper_mcp.storage.fts import fts_search
+    from scholar_paper_cli.storage.fts import fts_search
 
     conn = connect(tmp_path / "test.db")
     apply_migrations(conn)
@@ -92,7 +92,7 @@ def test_fts_search_respects_limit(tmp_path) -> None:
 
 def test_fts_search_synced_via_triggers(tmp_path) -> None:
     """Regression: FTS sync triggers keep papers_fts in sync."""
-    from scholar_paper_mcp.storage.fts import fts_search
+    from scholar_paper_cli.storage.fts import fts_search
 
     conn = connect(tmp_path / "test.db")
     apply_migrations(conn)
@@ -114,7 +114,7 @@ def test_fts_search_synced_via_triggers(tmp_path) -> None:
 
 
 def test_fts_search_multi_word(tmp_path) -> None:
-    from scholar_paper_mcp.storage.fts import fts_search
+    from scholar_paper_cli.storage.fts import fts_search
 
     conn = connect(tmp_path / "test.db")
     apply_migrations(conn)

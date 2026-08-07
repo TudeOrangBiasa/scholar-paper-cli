@@ -1,14 +1,14 @@
 """Tests for storage.citations CRUD."""
 
-from scholar_paper_mcp.models import CitationEdge, Paper
-from scholar_paper_mcp.storage.citations import (
+from scholar_paper_cli.models import CitationEdge, Paper
+from scholar_paper_cli.storage.citations import (
     delete_citations_for_paper,
     get_citations_of,
     get_references_of,
     insert_citation,
     insert_reference,
 )
-from scholar_paper_mcp.storage.papers import upsert_paper
+from scholar_paper_cli.storage.papers import upsert_paper
 
 
 def _seed_paper(conn, paper_id: str, now) -> None:

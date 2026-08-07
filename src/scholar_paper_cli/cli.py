@@ -16,15 +16,15 @@ import traceback
 from dataclasses import dataclass
 from typing import Any
 
-from scholar_paper_mcp import __version__, tools
-from scholar_paper_mcp.api.client import SemanticScholarClient
-from scholar_paper_mcp.api.offline import OfflineDetector
-from scholar_paper_mcp.config import get_settings, init_cache_dir
-from scholar_paper_mcp.exceptions import EmbeddingModelNotFoundError, ScholarPaperError
-from scholar_paper_mcp.models import ToolResponse
-from scholar_paper_mcp.storage.cache import CachedSemanticScholarClient
-from scholar_paper_mcp.storage.db import apply_migrations, connect
-from scholar_paper_mcp.storage.embeddings import Embedder, get_embedder
+from scholar_paper_cli import __version__, tools
+from scholar_paper_cli.api.client import SemanticScholarClient
+from scholar_paper_cli.api.offline import OfflineDetector
+from scholar_paper_cli.config import get_settings, init_cache_dir
+from scholar_paper_cli.exceptions import EmbeddingModelNotFoundError, ScholarPaperError
+from scholar_paper_cli.models import ToolResponse
+from scholar_paper_cli.storage.cache import CachedSemanticScholarClient
+from scholar_paper_cli.storage.db import apply_migrations, connect
+from scholar_paper_cli.storage.embeddings import Embedder, get_embedder
 
 logger = logging.getLogger(__name__)
 

@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from scholar_paper_mcp.api.rate_limiter import TokenBucket
+from scholar_paper_cli.api.rate_limiter import TokenBucket
 
 
 def test_initial_tokens_equals_capacity() -> None:

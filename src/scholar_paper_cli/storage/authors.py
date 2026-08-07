@@ -3,7 +3,7 @@
 import json
 from datetime import datetime
 
-from scholar_paper_mcp.models import Author, PaperBrief
+from scholar_paper_cli.models import Author, PaperBrief
 
 
 def _row_to_author(row) -> Author:

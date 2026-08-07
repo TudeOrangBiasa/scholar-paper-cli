@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from scholar_paper_mcp.config import Settings, get_settings
+from scholar_paper_cli.config import Settings, get_settings
 
 
 @pytest.fixture(autouse=True)

@@ -8,17 +8,17 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from scholar_paper_mcp.models import AuthorBrief, CacheMetadata, Paper
-from scholar_paper_mcp.storage.cache import CachedSemanticScholarClient
-from scholar_paper_mcp.storage.db import apply_migrations, connect
-from scholar_paper_mcp.storage.papers import upsert_paper
-from scholar_paper_mcp.storage.sessions import add_to_session
-from scholar_paper_mcp.tools.bibtex import (
+from scholar_paper_cli.models import AuthorBrief, CacheMetadata, Paper
+from scholar_paper_cli.storage.cache import CachedSemanticScholarClient
+from scholar_paper_cli.storage.db import apply_migrations, connect
+from scholar_paper_cli.storage.papers import upsert_paper
+from scholar_paper_cli.storage.sessions import add_to_session
+from scholar_paper_cli.tools.bibtex import (
     export_bibtex,
     export_session_bibtex,
     format_bibtex_entry,
 )
-from scholar_paper_mcp.tools.session import (
+from scholar_paper_cli.tools.session import (
     add_paper_to_session,
     list_session_papers_tool,
     remove_from_session_tool,
@@ -72,7 +72,7 @@ async def test_add_paper_fetches_from_api_when_not_in_db(conn) -> None:
 
 @pytest.mark.asyncio
 async def test_add_paper_links_to_session(conn) -> None:
-    from scholar_paper_mcp.storage.sessions import list_session_papers
+    from scholar_paper_cli.storage.sessions import list_session_papers
 
     upsert_paper(conn, _make_paper("p1"))
     client = AsyncMock(spec=CachedSemanticScholarClient)
@@ -89,7 +89,7 @@ async def test_remove_paper_from_session(conn) -> None:
     add_to_session(conn, "s1", "p1")
     result = await remove_from_session_tool(conn, "s1", "p1")
     assert result.data is True
-    from scholar_paper_mcp.storage.sessions import list_session_papers
+    from scholar_paper_cli.storage.sessions import list_session_papers
 
     assert list_session_papers(conn, "s1") == []
 
@@ -123,7 +123,7 @@ async def test_list_session_empty(conn) -> None:
 @pytest.mark.asyncio
 async def test_list_session_skips_missing_papers(conn) -> None:
     """If session paper_id has been deleted from DB, skip it (don't crash)."""
-    from scholar_paper_mcp.storage.papers import delete_paper
+    from scholar_paper_cli.storage.papers import delete_paper
 
     upsert_paper(conn, _make_paper("p1"))
     add_to_session(conn, "s1", "p1")

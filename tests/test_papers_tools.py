@@ -8,11 +8,11 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from scholar_paper_mcp.models import CacheMetadata
-from scholar_paper_mcp.storage.cache import CachedSemanticScholarClient
-from scholar_paper_mcp.storage.db import apply_migrations, connect
-from scholar_paper_mcp.storage.embeddings import Embedder
-from scholar_paper_mcp.tools.papers import (
+from scholar_paper_cli.models import CacheMetadata
+from scholar_paper_cli.storage.cache import CachedSemanticScholarClient
+from scholar_paper_cli.storage.db import apply_migrations, connect
+from scholar_paper_cli.storage.embeddings import Embedder
+from scholar_paper_cli.tools.papers import (
     get_paper_citations,
     get_paper_details,
     get_paper_references,
@@ -102,7 +102,7 @@ async def test_get_paper_details_returns_paper_with_metadata(conn) -> None:
 
 @pytest.mark.asyncio
 async def test_get_paper_details_persists_to_storage(conn) -> None:
-    from scholar_paper_mcp.storage.papers import get_paper as get_paper_from_db
+    from scholar_paper_cli.storage.papers import get_paper as get_paper_from_db
 
     client = _make_client(SAMPLE_PAPER_DATA)
     await get_paper_details(client, conn, None, "abc")
@@ -140,7 +140,7 @@ async def test_get_paper_details_skips_embedding_when_embedder_is_none(conn) -> 
 
 @pytest.mark.asyncio
 async def test_get_paper_details_persists_embedding_to_vec_table(conn) -> None:
-    from scholar_paper_mcp.storage.embeddings import knn_search
+    from scholar_paper_cli.storage.embeddings import knn_search
 
     client = _make_client(SAMPLE_PAPER_DATA)
     embedder = Mock(spec=Embedder)
@@ -183,7 +183,7 @@ async def test_get_paper_citations_returns_edges(conn) -> None:
 
 @pytest.mark.asyncio
 async def test_get_paper_citations_persists_to_storage(conn) -> None:
-    from scholar_paper_mcp.storage.citations import get_citations_of
+    from scholar_paper_cli.storage.citations import get_citations_of
 
     client = _make_client({"data": [CITATION_ENTRY]})
     await get_paper_citations(client, conn, "target")
@@ -228,7 +228,7 @@ async def test_get_paper_references_returns_edges(conn) -> None:
 
 @pytest.mark.asyncio
 async def test_get_paper_references_persists_to_storage(conn) -> None:
-    from scholar_paper_mcp.storage.citations import get_references_of
+    from scholar_paper_cli.storage.citations import get_references_of
 
     client = _make_client({"data": [REFERENCE_ENTRY]})
     await get_paper_references(client, conn, "source")
@@ -241,7 +241,7 @@ async def test_get_paper_references_persists_to_storage(conn) -> None:
 
 
 def test_parse_paper_extracts_authors_and_external_ids() -> None:
-    from scholar_paper_mcp.tools.papers import _parse_paper
+    from scholar_paper_cli.tools.papers import _parse_paper
 
     now = datetime.now(UTC)
     paper = _parse_paper(SAMPLE_PAPER_DATA, fetched_at=now, ttl_until=now + timedelta(days=30))
@@ -251,7 +251,7 @@ def test_parse_paper_extracts_authors_and_external_ids() -> None:
 
 
 def test_parse_paper_handles_missing_open_access_pdf() -> None:
-    from scholar_paper_mcp.tools.papers import _parse_paper
+    from scholar_paper_cli.tools.papers import _parse_paper
 
     data = {**SAMPLE_PAPER_DATA, "openAccessPdf": None}
     now = datetime.now(UTC)

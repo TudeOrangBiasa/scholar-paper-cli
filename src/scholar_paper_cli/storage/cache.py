@@ -8,16 +8,16 @@ from typing import Any
 
 import httpx
 
-from scholar_paper_mcp.api.client import SemanticScholarClient
-from scholar_paper_mcp.api.offline import OfflineDetector
-from scholar_paper_mcp.config import get_settings
-from scholar_paper_mcp.exceptions import (
+from scholar_paper_cli.api.client import SemanticScholarClient
+from scholar_paper_cli.api.offline import OfflineDetector
+from scholar_paper_cli.config import get_settings
+from scholar_paper_cli.exceptions import (
     APIRateLimitError,
     APIServerError,
     APITimeoutError,
     OfflineError,
 )
-from scholar_paper_mcp.models import CacheMetadata
+from scholar_paper_cli.models import CacheMetadata
 
 
 def make_cache_key(endpoint: str, params: dict[str, Any]) -> str:
