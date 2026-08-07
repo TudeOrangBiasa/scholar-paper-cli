@@ -44,6 +44,16 @@ def test_readme_has_no_mcp_registration_and_documents_skill() -> None:
     assert "skills/spm/SKILL.md" in text
 
 
+def test_bundled_skills_exist() -> None:
+    """Every bundled skill referenced by the docs must ship SKILL.md."""
+    root = Path(__file__).parent.parent
+    for name in ("spm", "writing-for-agents"):
+        skill = root / "skills" / name / "SKILL.md"
+        assert skill.is_file(), f"missing bundled skill: {skill}"
+    assert "skills/spm/SKILL.md" in (root / "README.md").read_text()
+    assert "skills/writing-for-agents/SKILL.md" in (root / "README.md").read_text()
+
+
 def test_agents_md_mentions_current_state() -> None:
     """AGENTS.md should reflect current project state."""
     agents = Path(__file__).parent.parent / "AGENTS.md"

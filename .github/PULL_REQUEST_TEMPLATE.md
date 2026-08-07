@@ -31,5 +31,6 @@ Tradeoffs, follow-ups, anything a reviewer should know.
 - [ ] `uv run ty check src tests` passes
 - [ ] `uv run ruff format --check src tests` passes
 - [ ] Changelog entry added under `Unreleased`
+- [ ] Agent docs updated for behavior changes (`AGENTS.md` or `skills/`)
 - [ ] No heavy imports at module top level
 - [ ] stdout stays JSON-only (CLI changes only)

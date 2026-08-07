@@ -1,5 +1,7 @@
 # scholar-paper-cli
 
+[![CI](https://github.com/TudeOrangBiasa/scholar-paper-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/TudeOrangBiasa/scholar-paper-cli/actions/workflows/ci.yml)
+
 spm — CLI for Semantic Scholar. 15 commands, persistent SQLite cache, offline fallback, multilingual semantic search.
 
 Pairs with the `writing-for-agents` skill for hackathon, proposal, thesis, and article workflows.
