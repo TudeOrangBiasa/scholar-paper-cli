@@ -34,16 +34,16 @@ spm search "quantum entanglement" --limit 2
 
 Every command prints a JSON `{"data": ..., "meta": ...}` envelope on stdout. Errors print `{"error": {"type", "message"}}` with a non-zero exit code.
 
-## Skill
+## Skills
 
-Teach your agent the CLI by installing the skill (`skills/spm/SKILL.md`):
+Install the bundled skills via the Vercel skills CLI:
 
 ```bash
-./skills.sh                     # installs into ~/.agents/skills (default)
-./skills.sh ~/.config/opencode/skills   # any other agent skills dir
+npx skills add https://github.com/TudeOrangBiasa/scholar-paper-cli -s spm -s writing-for-agents -g --copy
 ```
 
-The script copies every `skills/*/SKILL.md` into the target dir. Idempotent; re-run to refresh.
+- `spm` (`skills/spm/SKILL.md`): teaches the CLI, commands, output contract, caching, embeddings
+- `writing-for-agents` (`skills/writing-for-agents/SKILL.md`): reference for writing agent-facing docs
 
 The skill documents every command, the output contract, caching semantics, embeddings, and workflow recipes.
 

@@ -33,12 +33,12 @@ uv run spm search "quantum entanglement" --limit 2
 
 Every command prints JSON to stdout and exits 0. Errors print a JSON error envelope and exit non-zero.
 
-## Install the skill
+## Install the skills
 
-Teach your agent the CLI via the bundled skill:
+Install the bundled skills (`spm` + `writing-for-agents`) with the Vercel skills CLI:
 
 ```bash
-./skills.sh                     # installs into ~/.agents/skills
+npx skills add https://github.com/TudeOrangBiasa/scholar-paper-cli -s spm -s writing-for-agents -g --copy
 ```
 
 ## Environment variables
@@ -72,7 +72,8 @@ Expect JSON output: `{"data": {"query": ..., "total": ...}, "meta": {"source": "
 | `models/model_quantized.onnx` | mE5-small int8 ONNX, 113MB, git LFS |
 | `models/tokenizer.json` | XLM-RoBERTa tokenizer, 16MB |
 | `~/.local/share/scholar-paper-cli/cache.db` | SQLite cache (created at runtime) |
-| `skills/spm/SKILL.md` | Agent skill teaching the CLI |
+| `skills/spm/SKILL.md` | spm CLI skill (commands, output contract, caching) |
+| `skills/writing-for-agents/SKILL.md` | Agent-facing docs reference skill |
 | `docs/CONFIGURATION.md` | All `SPM_*` env vars |
 | `docs/WORKFLOW.md` | Document-writing integration |
 | `AGENTS.md` | Project conventions (TDD, ponytail, anti-AI-slop) |
@@ -128,8 +129,8 @@ rm -rf /path/to/scholar-paper-cli
 # Remove cache
 rm -rf ~/.local/share/scholar-paper-cli
 
-# Remove the skill
-rm -rf ~/.agents/skills/spm
+# Remove the skills
+npx skills remove spm writing-for-agents
 ```
 
 ## Tests

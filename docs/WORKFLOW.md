@@ -1,6 +1,6 @@
 # Document-writing workflow
 
-spm pairs with the global `writing-for-agents` skill for academic writing workflows.
+spm pairs with the bundled `writing-for-agents` skill (`skills/writing-for-agents/`) for academic writing workflows.
 
 ## Use cases
 

@@ -2,7 +2,7 @@
 
 spm: CLI for Semantic Scholar. 15 commands, persistent SQLite cache, offline fallback, multilingual semantic search.
 
-Status: complete. 14 of 14 planned issues done, plus 10 review fixes applied. spm CLI live, skill at skills/spm/SKILL.md.
+Status: complete. 14 of 14 planned issues done, plus 10 review fixes applied. spm CLI live, skills at skills/spm/ and skills/writing-for-agents/ (install via `npx skills add <repo> -g`).
 
 Stack: Python 3.13, argparse, httpx, SQLite + sqlite-vec, ONNX (multilingual-e5-small), pytest + ruff + ty.
 
