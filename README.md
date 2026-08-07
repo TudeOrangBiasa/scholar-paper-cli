@@ -112,17 +112,13 @@ Future work is open-ended. See [docs/PLAN.md](docs/PLAN.md) for the original pla
 
 ## How to contribute
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide: working rules, coding standards, and the pull request format.
+
 1. Check [docs/PLAN.md](docs/PLAN.md) for the project plan and any open work.
-2. Read [AGENTS.md](AGENTS.md) for conventions (TDD, ponytail, anti-AI-slop rules).
+2. Read [AGENTS.md](AGENTS.md) and [CONTRIBUTING.md](CONTRIBUTING.md) for conventions (TDD, ponytail, anti-AI-slop rules).
 3. Open an issue describing the change.
-4. Write tests first, then minimum code, then verify all checks pass:
-   ```bash
-   uv run pytest
-   uv run ruff check src tests
-   uv run ty check src tests
-   uv run ruff format --check src tests
-   ```
-5. Open a PR. Title format: `type(scope): short description` (e.g. `feat(api): add batch search endpoint`).
+4. Write tests first, then minimum code, then open a PR using [the template](.github/PULL_REQUEST_TEMPLATE.md). Title format: `type(scope): short description` (e.g. `feat(api): add batch search endpoint`).
+5. All four gates must pass before the PR merges: `uv run pytest`, `uv run ruff check src tests`, `uv run ty check src tests`, `uv run ruff format --check src tests`.
 
 ## License
 
