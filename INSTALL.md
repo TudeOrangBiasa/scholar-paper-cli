@@ -38,8 +38,7 @@ Every command prints JSON to stdout and exits 0. Errors print a JSON error envel
 Teach your agent the CLI via the bundled skill:
 
 ```bash
-mkdir -p ~/.agents/skills/spm
-cp skills/spm/SKILL.md ~/.agents/skills/spm/
+./skills.sh                     # installs into ~/.agents/skills
 ```
 
 ## Environment variables

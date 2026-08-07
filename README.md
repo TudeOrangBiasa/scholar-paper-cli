@@ -36,17 +36,14 @@ Every command prints a JSON `{"data": ..., "meta": ...}` envelope on stdout. Err
 
 ## Skill
 
-Teach your agent the CLI by installing the skill into your agent skills dir:
+Teach your agent the CLI by installing the skill (`skills/spm/SKILL.md`):
 
 ```bash
-# Agent-agnostic skills dir (used by most agent CLIs)
-mkdir -p ~/.agents/skills/spm
-cp skills/spm/SKILL.md ~/.agents/skills/spm/
-
-# OpenCode alternative
-mkdir -p ~/.config/opencode/skills/spm
-cp skills/spm/SKILL.md ~/.config/opencode/skills/spm/
+./skills.sh                     # installs into ~/.agents/skills (default)
+./skills.sh ~/.config/opencode/skills   # any other agent skills dir
 ```
+
+The script copies every `skills/*/SKILL.md` into the target dir. Idempotent; re-run to refresh.
 
 The skill documents every command, the output contract, caching semantics, embeddings, and workflow recipes.
 
