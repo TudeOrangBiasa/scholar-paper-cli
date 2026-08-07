@@ -83,7 +83,7 @@ A command follows this sequence:
 6. **Persist**: paper, author, citation, session rows written to SQLite. Embedding stored in `embeddings_vec`.
 7. **Wrap**: response enveloped as `ToolResponse[data, meta]`, printed as JSON on stdout.
 
-See [docs/PLAN.md](docs/PLAN.md) for the full design rationale.
+See [PHILOSOPHY.md](PHILOSOPHY.md) for why the project is designed this way, and [docs/PLAN.md](docs/PLAN.md) for the original plan.
 
 ## Development
 

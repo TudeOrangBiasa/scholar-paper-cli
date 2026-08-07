@@ -24,6 +24,7 @@ Thanks for contributing to scholar-paper-cli. Read this before you start. It cov
    ```
 6. **Update the changelog.** Add an entry under `Unreleased` in `CHANGELOG.md` using the section keywords: `Added`, `Changed`, `Removed`, `Fixed`, `Tests`. Keep old entries untouched (historical record).
 7. **Do not rewrite historical records.** `docs/PLAN.md`, `docs/architecture.drawio*`, and old `CHANGELOG.md` entries document the MCP-era design. Leave them alone.
+8. **Read [PHILOSOPHY.md](PHILOSOPHY.md) before making design decisions.** It explains why the CLI, the JSON contract, the lazy imports, and the cache semantics exist. A change that fights the philosophy needs the philosophy updated too, not ignored.
 
 ## Coding standards
 
