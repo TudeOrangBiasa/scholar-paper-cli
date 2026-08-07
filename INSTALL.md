@@ -38,8 +38,8 @@ Every command prints JSON to stdout and exits 0. Errors print a JSON error envel
 Teach your agent the CLI via the bundled skill:
 
 ```bash
-mkdir -p ~/.config/opencode/skills/spm
-cp skills/spm/SKILL.md ~/.config/opencode/skills/spm/
+mkdir -p ~/.agents/skills/spm
+cp skills/spm/SKILL.md ~/.agents/skills/spm/
 ```
 
 ## Environment variables
@@ -130,7 +130,7 @@ rm -rf /path/to/scholar-paper-cli
 rm -rf ~/.local/share/scholar-paper-cli
 
 # Remove the skill
-rm -rf ~/.config/opencode/skills/spm
+rm -rf ~/.agents/skills/spm
 ```
 
 ## Tests
