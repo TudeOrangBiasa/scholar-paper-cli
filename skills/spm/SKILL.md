@@ -21,7 +21,7 @@ Run via `uv run spm ...` from the repo, or install the published package for a b
 uv tool install scholar-paper-cli
 ```
 
-Embedding model: looked up at `Path(SPM_CACHE_PATH).parent/models/` (default `~/.local/share/scholar-paper-cli/models/`, bundled via git LFS). If the model files are missing, `spm paper <id> --embed` and `spm related <id>` fail with a JSON `EmbeddingError` and exit 1. This is documented behavior, not a bug: embedding commands degrade cleanly without the model.
+Embedding model: looked up at `Path(SPM_CACHE_PATH).parent/models/` (default `~/.local/share/scholar-paper-cli/models/`). The model is not bundled with the repo; download it once per `models/README.md`. If the model files are missing, `spm paper <id> --embed` and `spm related <id>` fail with a JSON `EmbeddingError` and exit 1. This is documented behavior, not a bug: embedding commands degrade cleanly without the model.
 
 Env vars (all optional):
 

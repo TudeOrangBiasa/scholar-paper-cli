@@ -7,7 +7,8 @@
 - `skills/spm/SKILL.md` agent skill; installs to `~/.config/opencode/skills/spm/`.
 
 ### Changed
-- Project renamed to `scholar-paper-cli`: GitHub repo, distribution name, HTTP User-Agent, and default cache path (`~/.local/share/scholar-paper-cli/`). Python package stays `scholar_paper_mcp`; command stays `spm`.
+- Project renamed to `scholar-paper-cli`: GitHub repo, distribution name, HTTP User-Agent, Python package (`scholar_paper_cli`), and default cache path (`~/.local/share/scholar-paper-cli/`). Command stays `spm`.
+- Embedding model removed from the repo and git LFS. Download once per `models/README.md`; the 11 embedding integration tests skip when the model is absent.
 - `storage/embeddings.py`: heavy imports (`numpy`, `onnxruntime`, `tokenizers`) now lazy — non-embedding commands start ~0.2s instead of ~1s.
 - `tests/test_client.py::test_no_api_key_header_when_not_configured`: now isolates ambient `SPM_API_KEY` (previously failed when the env var was set).
 - `tests/test_docs.py`: README command list sourced from the argparse parser (no drift).

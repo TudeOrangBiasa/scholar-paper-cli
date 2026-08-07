@@ -24,6 +24,10 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Model files (downloaded separately, see models/README.md)
+models/model_quantized.onnx
+models/tokenizer.json
+
 # Tool backup files (drawio, etc.)
 .*.bak
 *~

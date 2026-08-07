@@ -22,6 +22,6 @@ Skills stack:
 - impeccable (design direction, anti-AI-slop visual prompts)
 - drawio (architecture diagrams)
 
-Test stats: 281 pass, 0 model-skip (mE5 bundled via git LFS).
+Test stats: 281 pass; 11 embedding integration tests skip when the model is not downloaded (see `models/README.md`).
 
 See `docs/PLAN.md` for the full plan, `docs/CONFIGURATION.md` for env vars, `docs/WORKFLOW.md` for document-writing integration.

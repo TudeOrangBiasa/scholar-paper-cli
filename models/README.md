@@ -2,6 +2,8 @@
 
 Download files for `intfloat/multilingual-e5-small` int8 ONNX.
 
+The model is **not bundled with the repo** (removed from git LFS to avoid public bandwidth limits). Download once; the files go in `models/` (repo clone) or `~/.local/share/scholar-paper-cli/models/` (runtime lookup).
+
 ## Required files
 
 - `model_quantized.onnx` (~118MB) — from [HuggingFace](https://huggingface.co/intfloat/multilingual-e5-small/tree/main/onnx)

@@ -21,7 +21,7 @@ git clone https://github.com/TudeOrangBiasa/scholar-paper-cli
 cd scholar-paper-cli
 uv sync
 
-# Download embedding model (~118MB, one time)
+# The embedding model is not bundled. Download once (~135MB) for --embed/related:
 # See models/README.md for details
 ```
 

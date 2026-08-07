@@ -6,8 +6,8 @@ One-step install for `spm` (scholar-paper-cli). Suitable for AI agents.
 
 - Python 3.13
 - uv 0.10+
-- git (with git-lfs 3.0+)
-- ~150MB disk (model bundled via git LFS)
+- git
+- Embedding model (~135MB) downloaded separately, see `models/README.md` (only needed for `spm paper --embed` and `spm related`)
 
 ## Install
 
@@ -82,16 +82,7 @@ Expect JSON output: `{"data": {"query": ..., "total": ...}, "meta": {"source": "
 
 **`git-lfs: command not found` during clone**
 
-The model file is a 113MB regular git object without LFS. Install git-lfs:
-```bash
-# Ubuntu/Debian
-sudo apt install git-lfs && git lfs install
-
-# macOS
-brew install git-lfs && git lfs install
-
-# Then re-clone
-```
+Not needed. The model is no longer bundled via git LFS; it is downloaded separately (see `models/README.md`).
 
 **`RuntimeError: Required inputs (['token_type_ids']) are missing`**
 
@@ -104,17 +95,16 @@ The model requires `token_type_ids` input. Fixed in `6e209ed`.
 
 **`EmbeddingModelNotFoundError: model not found`**
 
-Model files missing or wrong path. Check:
+Model files missing or wrong path. The model is not bundled with the repo; download once:
 ```bash
-ls -la models/
-# Should show: model_quantized.onnx (~113MB) + tokenizer.json (~16MB)
+# See models/README.md for the exact commands
+uvx huggingface-cli download intfloat/multilingual-e5-small onnx/model_quantized.onnx --local-dir models/ --local-dir-use-symlinks False
+mv models/onnx/model_quantized.onnx models/ && rmdir models/onnx
 ```
 
-If files are 0 bytes or pointers, run `git lfs pull`.
+**Embedding tests show skipped (model not downloaded)**
 
-**Tests show skipped (model not downloaded)**
-
-Same as above. LFS not pulled. Run `git lfs pull`.
+Expected. The 11 embedding integration tests in `tests/test_embeddings.py` skip when `models/` has no model. Run the download above to enable them.
 
 **`SS API rate limited (429)`**
 
