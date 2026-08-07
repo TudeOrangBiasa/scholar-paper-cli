@@ -91,7 +91,7 @@ Outdated code. Pull latest:
 git pull
 ```
 
-The model requires `token_type_ids` input. Fixed in `6e209ed`.
+The model requires `token_type_ids` input. Fixed in the `fix(embeddings)` commit.
 
 **`EmbeddingModelNotFoundError: model not found`**
 
