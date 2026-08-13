@@ -22,6 +22,20 @@ Skills stack:
 - impeccable (design direction, anti-AI-slop visual prompts)
 - drawio (architecture diagrams)
 
-Test stats: 281 pass; 11 embedding integration tests skip when the model is not downloaded (see `models/README.md`).
+Test stats: 280 pass; 9 embedding integration tests skip when the model is not downloaded (see `models/README.md`).
 
 See `docs/PLAN.md` for the full plan, `docs/CONFIGURATION.md` for env vars, `docs/WORKFLOW.md` for document-writing integration.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs for this repo live as GitHub issues, operated via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-role vocabulary: needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.

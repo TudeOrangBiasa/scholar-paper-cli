@@ -241,20 +241,119 @@ async def test_get_paper_references_persists_to_storage(conn) -> None:
 
 
 def test_parse_paper_extracts_authors_and_external_ids() -> None:
-    from scholar_paper_cli.tools.papers import _parse_paper
+    from scholar_paper_cli.tools.papers import parse_paper
 
     now = datetime.now(UTC)
-    paper = _parse_paper(SAMPLE_PAPER_DATA, fetched_at=now, ttl_until=now + timedelta(days=30))
+    paper = parse_paper(SAMPLE_PAPER_DATA, fetched_at=now, ttl_until=now + timedelta(days=30))
     assert len(paper.authors) == 1
     assert paper.authors[0].name == "Alice"
     assert paper.external_ids == {"DOI": "10.1234/abc"}
 
 
 def test_parse_paper_handles_missing_open_access_pdf() -> None:
-    from scholar_paper_cli.tools.papers import _parse_paper
+    from scholar_paper_cli.tools.papers import parse_paper
 
     data = {**SAMPLE_PAPER_DATA, "openAccessPdf": None}
     now = datetime.now(UTC)
-    paper = _parse_paper(data, fetched_at=now, ttl_until=now + timedelta(days=30))
+    paper = parse_paper(data, fetched_at=now, ttl_until=now + timedelta(days=30))
     assert paper.open_access_pdf_url is None
     assert paper.is_open_access is False
+
+
+# ── ensure_paper (materialization) ─────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_ensure_paper_uses_local_row_without_fetch(conn) -> None:
+    from scholar_paper_cli.models import Paper
+    from scholar_paper_cli.storage.papers import upsert_paper as ups_p
+    from scholar_paper_cli.tools.papers import ensure_paper
+
+    now = datetime.now(UTC)
+    ups_p(conn, Paper(paper_id="p1", title="Local", fetched_at=now, ttl_until=now + timedelta(days=30)))
+    client = _make_client(SAMPLE_PAPER_DATA)
+
+    paper, meta = await ensure_paper(client, conn, "p1")
+
+    assert paper.paper_id == "p1"
+    client.get_paper.assert_not_awaited()
+    assert meta.source == "db"
+    assert meta.cached is False
+
+
+@pytest.mark.asyncio
+async def test_ensure_paper_fetches_and_persists_on_miss(conn) -> None:
+    from scholar_paper_cli.storage.papers import get_paper as get_paper_db
+    from scholar_paper_cli.tools.papers import ensure_paper
+
+    client = _make_client(SAMPLE_PAPER_DATA)
+
+    paper, meta = await ensure_paper(client, conn, "abc")
+
+    client.get_paper.assert_awaited_once_with("abc", fields=None)
+    assert paper.paper_id == "abc"
+    assert get_paper_db(conn, "abc") is not None
+    assert meta.source == "api"
+
+
+@pytest.mark.asyncio
+async def test_ensure_paper_refetches_stale_row(conn) -> None:
+    from datetime import timedelta
+
+    from scholar_paper_cli.models import Paper
+    from scholar_paper_cli.storage.papers import upsert_paper as ups_p
+    from scholar_paper_cli.tools.papers import ensure_paper
+
+    now = datetime.now(UTC)
+    stale = Paper(
+        paper_id="old",
+        title="Stale",
+        fetched_at=now - timedelta(days=60),
+        ttl_until=now - timedelta(days=30),
+    )
+    ups_p(conn, stale)
+    client = _make_client(SAMPLE_PAPER_DATA)
+
+    paper, meta = await ensure_paper(client, conn, "old")
+
+    client.get_paper.assert_awaited_once_with("old", fields=None)
+    assert paper.title == "Quantum Entanglement"
+    assert meta.source == "api"
+
+
+@pytest.mark.asyncio
+async def test_ensure_paper_fresh_always_fetches(conn) -> None:
+    """fresh=True (the `paper` command) never serves a local row."""
+    from datetime import timedelta
+
+    from scholar_paper_cli.models import Paper
+    from scholar_paper_cli.storage.papers import upsert_paper as ups_p
+    from scholar_paper_cli.tools.papers import ensure_paper
+
+    now = datetime.now(UTC)
+    ups_p(conn, Paper(paper_id="p1", title="Local", fetched_at=now, ttl_until=now + timedelta(days=30)))
+    client = _make_client(SAMPLE_PAPER_DATA)
+
+    paper, meta = await ensure_paper(client, conn, "p1", fresh=True)
+
+    client.get_paper.assert_awaited_once_with("p1", fields=None)
+    assert paper.title == "Quantum Entanglement"
+    assert meta.source == "api"
+
+
+@pytest.mark.asyncio
+async def test_ensure_paper_persists_embedding_to_papers_row(conn) -> None:
+    """Computed embeddings must land in the papers row, not just the vec table."""
+    from scholar_paper_cli.storage.papers import get_paper as get_paper_db
+    from scholar_paper_cli.tools.papers import ensure_paper
+
+    client = _make_client(SAMPLE_PAPER_DATA)
+    embedder = Mock(spec=Embedder)
+    fake_emb = [0.1 * i for i in range(384)]
+    embedder.encode.return_value = [fake_emb]
+
+    await ensure_paper(client, conn, "abc", embedder=embedder)
+
+    stored = get_paper_db(conn, "abc")
+    assert stored is not None
+    assert stored.embedding == pytest.approx(fake_emb)

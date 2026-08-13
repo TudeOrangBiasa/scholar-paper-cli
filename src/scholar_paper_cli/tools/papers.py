@@ -1,29 +1,34 @@
-"""Paper tools: search, details, citations, references."""
+"""Paper tools: search, details, citations, references, materialization."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any
 
 from pydantic import HttpUrl
 
 from scholar_paper_cli.models import (
     AuthorBrief,
+    CacheMetadata,
     CitationEdge,
     Paper,
     PaperSearchResult,
     ToolResponse,
 )
-from scholar_paper_cli.storage.cache import CachedSemanticScholarClient
+from scholar_paper_cli.storage.cache import (
+    CachedSemanticScholarClient,
+    entity_ttl_until,
+    make_metadata,
+)
 from scholar_paper_cli.storage.citations import (
     insert_citation,
     insert_reference,
 )
 from scholar_paper_cli.storage.embeddings import Embedder, upsert_embedding
-from scholar_paper_cli.storage.papers import upsert_paper
+from scholar_paper_cli.storage.papers import get_paper, upsert_paper
 
 # ── SS response parsers ─────────────────────────────────────────
 
 
-def _parse_paper(data: dict[str, Any], *, fetched_at: datetime, ttl_until: datetime) -> Paper:
+def parse_paper(data: dict[str, Any], *, fetched_at: datetime, ttl_until: datetime) -> Paper:
     oa = data.get("openAccessPdf")
     pdf_url = HttpUrl(oa["url"]) if isinstance(oa, dict) and oa.get("url") else None
     authors = [
@@ -56,7 +61,7 @@ def _parse_paper(data: dict[str, Any], *, fetched_at: datetime, ttl_until: datet
 def _parse_search_result(data: dict[str, Any], query: str) -> PaperSearchResult:
     now = datetime.now(UTC)
     papers = [
-        _parse_paper(p, fetched_at=now, ttl_until=now + timedelta(days=30))
+        parse_paper(p, fetched_at=now, ttl_until=entity_ttl_until(now))
         for p in data.get("data", [])
     ]
     return PaperSearchResult(
@@ -94,6 +99,42 @@ def _parse_reference(entry: dict[str, Any], source_paper_id: str) -> CitationEdg
     )
 
 
+# ── Materialization ─────────────────────────────────────────────
+
+
+async def ensure_paper(
+    client: CachedSemanticScholarClient,
+    conn,
+    paper_id: str,
+    *,
+    fields: list[str] | None = None,
+    embedder: Embedder | None = None,
+    fresh: bool = False,
+) -> tuple[Paper, CacheMetadata]:
+    """Materialize a paper locally: db lookup → fetch → parse → persist → optional embed.
+
+    Serves a fresh local row (ttl_until in the future) with honest "db"
+    provenance; a stale or missing row is refetched through the cache wrapper.
+    fresh=True always fetches (the get_paper_details contract). The embedder
+    is applied when given, an abstract exists, and no embedding is stored;
+    computed embeddings are persisted to both the vec table and the papers row.
+    """
+    now = datetime.now(UTC)
+    paper = None if fresh else get_paper(conn, paper_id)
+    if paper is not None and paper.ttl_until > now:
+        meta = make_metadata("db", fetched_at=paper.fetched_at, ttl_until=paper.ttl_until)
+    else:
+        data, meta = await client.get_paper(paper_id, fields=fields)
+        paper = parse_paper(data, fetched_at=now, ttl_until=entity_ttl_until(now))
+        upsert_paper(conn, paper)
+    if embedder is not None and paper.abstract and paper.embedding is None:
+        [embedding] = embedder.encode([paper.abstract], mode="passage")
+        paper.embedding = embedding
+        upsert_embedding(conn, paper.paper_id, embedding)
+        upsert_paper(conn, paper)
+    return paper, meta
+
+
 # ── Tool functions ──────────────────────────────────────────────
 
 
@@ -117,14 +158,9 @@ async def get_paper_details(
     *,
     fields: list[str] | None = None,
 ) -> ToolResponse[Paper]:
-    data, meta = await client.get_paper(paper_id, fields=fields)
-    now = datetime.now(UTC)
-    paper = _parse_paper(data, fetched_at=now, ttl_until=now + timedelta(days=30))
-    if paper.abstract and embedder is not None:
-        [embedding] = embedder.encode([paper.abstract], mode="passage")
-        upsert_embedding(conn, paper.paper_id, embedding)
-        paper.embedding = embedding
-    upsert_paper(conn, paper)
+    paper, meta = await ensure_paper(
+        client, conn, paper_id, fields=fields, embedder=embedder, fresh=True
+    )
     return ToolResponse(data=paper, meta=meta)
 
 

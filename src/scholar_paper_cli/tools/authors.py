@@ -1,27 +1,21 @@
 """Author tools: search, details, top papers, duplicates, consolidate."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from difflib import SequenceMatcher
-from typing import Any, Literal
+from typing import Any
 
-from scholar_paper_cli.exceptions import APINotFoundError
 from scholar_paper_cli.models import (
     Author,
     AuthorSearchResult,
-    CacheMetadata,
     PaperBrief,
     ToolResponse,
 )
-from scholar_paper_cli.storage.authors import (
-    delete_author as _delete_author_from_db,
+from scholar_paper_cli.storage.authors import merge_author, upsert_author
+from scholar_paper_cli.storage.cache import (
+    CachedSemanticScholarClient,
+    entity_ttl_until,
+    make_metadata,
 )
-from scholar_paper_cli.storage.authors import (
-    get_author as _get_author_from_db,
-)
-from scholar_paper_cli.storage.authors import (
-    upsert_author as _upsert_author_to_db,
-)
-from scholar_paper_cli.storage.cache import CachedSemanticScholarClient
 
 # ── SS response parsers ─────────────────────────────────────────
 
@@ -54,7 +48,7 @@ def _parse_author(data: dict[str, Any], *, fetched_at: datetime, ttl_until: date
 def _parse_search_result(data: dict[str, Any], query: str) -> AuthorSearchResult:
     now = datetime.now(UTC)
     authors = [
-        _parse_author(a, fetched_at=now, ttl_until=now + timedelta(days=30))
+        _parse_author(a, fetched_at=now, ttl_until=entity_ttl_until(now))
         for a in data.get("data", [])
     ]
     return AuthorSearchResult(
@@ -75,14 +69,6 @@ def _name_similarity(a: str | None, b: str | None) -> float:
     if not a_str and not b_str:
         return 0.0
     return SequenceMatcher(None, a_str, b_str).ratio()
-
-
-def _meta(source: Literal["cache", "api", "offline_cache"] = "cache") -> CacheMetadata:
-    return CacheMetadata(
-        cached=True,
-        fetched_at=datetime.now(UTC),
-        source=source,
-    )
 
 
 # ── Tool functions ──────────────────────────────────────────────
@@ -109,8 +95,8 @@ async def get_author_details(
 ) -> ToolResponse[Author]:
     data, meta = await client.get_author(author_id, fields=fields)
     now = datetime.now(UTC)
-    author = _parse_author(data, fetched_at=now, ttl_until=now + timedelta(days=30))
-    _upsert_author_to_db(conn, author)
+    author = _parse_author(data, fetched_at=now, ttl_until=entity_ttl_until(now))
+    upsert_author(conn, author)
     return ToolResponse(data=author, meta=meta)
 
 
@@ -147,7 +133,7 @@ async def find_author_duplicates(
     data, meta = await client.search_authors(query, limit=limit, offset=0)
     now = datetime.now(UTC)
     authors = [
-        _parse_author(a, fetched_at=now, ttl_until=now + timedelta(days=30))
+        _parse_author(a, fetched_at=now, ttl_until=entity_ttl_until(now))
         for a in data.get("data", [])
     ]
     groups: list[list[Author]] = []
@@ -173,37 +159,5 @@ async def consolidate_authors(
     canonical_id: str,
     duplicate_ids: list[str],
 ) -> ToolResponse[Author]:
-    canonical = _get_author_from_db(conn, canonical_id)
-    if canonical is None:
-        raise APINotFoundError(f"author not found: {canonical_id}")
-
-    seen_paper_ids = {p.paper_id for p in canonical.papers}
-    seen_aliases = set(canonical.aliases) | ({canonical.name} if canonical.name else set())
-
-    for dup_id in duplicate_ids:
-        dup = _get_author_from_db(conn, dup_id)
-        if dup is None:
-            continue
-        for alias in dup.aliases:
-            if alias and alias not in seen_aliases:
-                canonical.aliases.append(alias)
-                seen_aliases.add(alias)
-        for paper in dup.papers:
-            if paper.paper_id not in seen_paper_ids:
-                canonical.papers.append(paper)
-                seen_paper_ids.add(paper.paper_id)
-        conn.execute(
-            "INSERT OR REPLACE INTO paper_authors (paper_id, author_id, author_position) "
-            "SELECT paper_id, ?, author_position FROM paper_authors WHERE author_id = ?",
-            (canonical_id, dup_id),
-        )
-        conn.execute("DELETE FROM paper_authors WHERE author_id = ?", (dup_id,))
-        _delete_author_from_db(conn, dup_id)
-
-    canonical.paper_count = len(canonical.papers)
-    now = datetime.now(UTC)
-    canonical.fetched_at = now
-    canonical.ttl_until = now + timedelta(days=30)
-    _upsert_author_to_db(conn, canonical)
-    conn.commit()
-    return ToolResponse(data=canonical, meta=_meta("cache"))
+    canonical, _summary = merge_author(conn, canonical_id, duplicate_ids)
+    return ToolResponse(data=canonical, meta=make_metadata("db"))

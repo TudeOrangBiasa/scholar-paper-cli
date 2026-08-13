@@ -39,6 +39,15 @@ def test_make_cache_key_includes_endpoint() -> None:
     assert k1 != k2
 
 
+def test_make_cache_key_sorts_list_values() -> None:
+    """List params are order-insensitive: equivalent calls share a cache entry."""
+    k1 = make_cache_key("get_recommendations", {"positive_ids": ["b", "a", "c"]})
+    k2 = make_cache_key("get_recommendations", {"positive_ids": ["a", "b", "c"]})
+    assert k1 == k2
+    k3 = make_cache_key("get_recommendations", {"positive_ids": ["a", "b"]})
+    assert k1 != k3
+
+
 # ── Helpers ───────────────────────────────────────────────────────
 
 
@@ -359,3 +368,24 @@ async def test_cache_uses_settings_force_offline_by_default(tmp_path: Path) -> N
     cached = CachedSemanticScholarClient(ss, conn, ttl_days=30)
     assert hasattr(cached, "offline")
     assert cached.offline._force is False
+
+
+def test_cache_wrapper_ttl_defaults_to_settings(tmp_path: Path) -> None:
+    """ttl_days omitted → settings.cache_ttl_days is the policy (issue: knob was inert)."""
+    from scholar_paper_cli.config import get_settings
+
+    conn = _conn(tmp_path)
+    ss = AsyncMock(spec=SemanticScholarClient)
+    cached = CachedSemanticScholarClient(ss, conn)
+    assert cached.ttl_days == get_settings().cache_ttl_days
+
+
+def test_entity_ttl_until_matches_settings() -> None:
+    """Entity freshness deadlines derive from the same TTL policy as the wrapper."""
+    from scholar_paper_cli.config import get_settings
+    from scholar_paper_cli.storage.cache import entity_ttl_until
+
+    now = datetime.now(UTC)
+    deadline = entity_ttl_until(now)
+    expected = now + timedelta(days=get_settings().cache_ttl_days)
+    assert abs((deadline - expected).total_seconds()) < 1

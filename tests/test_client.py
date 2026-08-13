@@ -276,3 +276,42 @@ async def test_search_authors_omits_unsupported_fields() -> None:
     assert result == {"data": []}
     assert "aliases" not in DEFAULT_AUTHOR_SEARCH_FIELDS
     assert "papers" not in DEFAULT_AUTHOR_SEARCH_FIELDS
+
+
+def test_coerce_fields_normalizes_to_comma_string() -> None:
+    from scholar_paper_cli.api.client import _coerce_fields
+
+    assert _coerce_fields(None) is None
+    assert _coerce_fields(["title", "year"]) == "title,year"
+    assert _coerce_fields(["title", "", "year"]) == "title,year"
+    assert _coerce_fields([" title ", "year "]) == "title,year"
+    assert _coerce_fields([]) is None
+    assert _coerce_fields(" title ") == "title"
+    assert _coerce_fields("") is None
+
+
+@pytest.mark.asyncio
+async def test_fields_list_hits_wire_as_single_param() -> None:
+    """A list fields value must reach the transport as one comma-joined param."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.params["fields"] == "title,year"
+        return httpx.Response(200, json={})
+
+    transport = httpx.MockTransport(handler)
+    async with SemanticScholarClient(transport=transport, base_url="http://test") as client:
+        await client.get_paper("abc", fields=["title", "year"])
+
+
+@pytest.mark.asyncio
+async def test_timeout_raises_api_timeout_error() -> None:
+    """httpx timeouts must surface as APITimeoutError, not raw exceptions."""
+    from scholar_paper_cli.exceptions import APITimeoutError
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout("timed out")
+
+    transport = httpx.MockTransport(handler)
+    async with SemanticScholarClient(transport=transport, base_url="http://test") as client:
+        with pytest.raises(APITimeoutError):
+            await client.get_paper("abc")
