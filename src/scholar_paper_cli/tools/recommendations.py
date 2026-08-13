@@ -1,25 +1,23 @@
 """Recommendation tools: SS API recommendations and local KNN related papers."""
 
-from datetime import UTC, datetime, timedelta
-from typing import Any, Literal
+from datetime import UTC, datetime
+from typing import Any
 
 from scholar_paper_cli.exceptions import EmbeddingError
-from scholar_paper_cli.models import CacheMetadata, Paper, PaperSearchResult, ToolResponse
-from scholar_paper_cli.storage.cache import CachedSemanticScholarClient
-from scholar_paper_cli.storage.embeddings import Embedder, knn_search, upsert_embedding
-from scholar_paper_cli.storage.papers import get_paper as _get_paper_from_db
-from scholar_paper_cli.storage.papers import upsert_paper
-from scholar_paper_cli.tools.papers import _parse_paper
-
-
-def _meta(source: Literal["cache", "api", "offline_cache", "embeddings"] = "api") -> CacheMetadata:
-    return CacheMetadata(cached=True, fetched_at=datetime.now(UTC), source=source)
+from scholar_paper_cli.models import Paper, PaperSearchResult, ToolResponse
+from scholar_paper_cli.storage.cache import (
+    CachedSemanticScholarClient,
+    entity_ttl_until,
+    make_metadata,
+)
+from scholar_paper_cli.storage.embeddings import Embedder, knn_search
+from scholar_paper_cli.tools.papers import ensure_paper, parse_paper
 
 
 def _parse_recommendation_result(data: dict[str, Any], paper_id: str) -> PaperSearchResult:
     now = datetime.now(UTC)
     papers = [
-        _parse_paper(p, fetched_at=now, ttl_until=now + timedelta(days=30))
+        parse_paper(p, fetched_at=now, ttl_until=entity_ttl_until(now))
         for p in data.get("recommendedPapers", [])
     ]
     return PaperSearchResult(
@@ -61,17 +59,7 @@ async def get_related_papers(
     if embedder is None:
         raise EmbeddingError("embedder required for related papers")
 
-    paper = _get_paper_from_db(conn, paper_id)
-    if paper is None or paper.embedding is None:
-        data, _ = await client.get_paper(paper_id)
-        now = datetime.now(UTC)
-        paper = _parse_paper(data, fetched_at=now, ttl_until=now + timedelta(days=30))
-        if paper.abstract:
-            [emb] = embedder.encode([paper.abstract], mode="passage")
-            paper.embedding = emb
-            upsert_embedding(conn, paper.paper_id, emb)
-        upsert_paper(conn, paper)
-
+    paper, _ = await ensure_paper(client, conn, paper_id, embedder=embedder)
     if paper.embedding is None:
         raise EmbeddingError(f"paper {paper_id} has no abstract, cannot embed")
 
@@ -80,12 +68,7 @@ async def get_related_papers(
 
     papers: list[Paper] = []
     for pid, _ in related_ids:
-        p = _get_paper_from_db(conn, pid)
-        if p is None:
-            data, _ = await client.get_paper(pid)
-            now = datetime.now(UTC)
-            p = _parse_paper(data, fetched_at=now, ttl_until=now + timedelta(days=30))
-            upsert_paper(conn, p)
+        p, _ = await ensure_paper(client, conn, pid)
         papers.append(p)
 
-    return ToolResponse(data=papers, meta=_meta("embeddings"))
+    return ToolResponse(data=papers, meta=make_metadata("embeddings"))

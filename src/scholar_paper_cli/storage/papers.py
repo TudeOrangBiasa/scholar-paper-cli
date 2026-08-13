@@ -132,27 +132,3 @@ def list_papers(conn, *, limit: int = 20, offset: int = 0) -> list[Paper]:
 
 def count_papers(conn) -> int:
     return conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
-
-
-def link_paper_author(conn, paper_id: str, author_id: str, position: int = 0) -> None:
-    conn.execute(
-        "INSERT INTO paper_authors (paper_id, author_id, author_position) VALUES (?, ?, ?) "
-        "ON CONFLICT(paper_id, author_id) DO UPDATE SET author_position = excluded.author_position",
-        (paper_id, author_id, position),
-    )
-    conn.commit()
-
-
-def unlink_paper_author(conn, paper_id: str, author_id: str) -> None:
-    conn.execute(
-        "DELETE FROM paper_authors WHERE paper_id = ? AND author_id = ?", (paper_id, author_id)
-    )
-    conn.commit()
-
-
-def list_paper_authors(conn, paper_id: str) -> list[tuple[str, int]]:
-    rows = conn.execute(
-        "SELECT author_id, author_position FROM paper_authors WHERE paper_id = ? ORDER BY author_position",
-        (paper_id,),
-    ).fetchall()
-    return [(r["author_id"], r["author_position"]) for r in rows]

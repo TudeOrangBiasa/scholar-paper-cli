@@ -1,9 +1,11 @@
 """Storage layer: SQLite-backed papers, authors, citations, references, sessions + cache wrapper."""
 
 from scholar_paper_cli.storage.authors import (
+    MergeSummary,
     count_authors,
     get_author,
     list_authors,
+    merge_author,
     search_authors_by_name,
     upsert_author,
 )
@@ -28,10 +30,7 @@ from scholar_paper_cli.storage.papers import (
     get_paper,
     get_paper_by_arxiv,
     get_paper_by_doi,
-    link_paper_author,
-    list_paper_authors,
     list_papers,
-    unlink_paper_author,
     upsert_paper,
 )
 from scholar_paper_cli.storage.sessions import (
@@ -44,6 +43,7 @@ from scholar_paper_cli.storage.sessions import (
 __all__ = [
     "CachedSemanticScholarClient",
     "Embedder",
+    "MergeSummary",
     "add_to_session",
     "clear_session",
     "count_authors",
@@ -61,15 +61,13 @@ __all__ = [
     "insert_citation",
     "insert_reference",
     "knn_search",
-    "link_paper_author",
     "list_authors",
-    "list_paper_authors",
     "list_papers",
     "list_session_papers",
     "make_cache_key",
+    "merge_author",
     "remove_from_session",
     "search_authors_by_name",
-    "unlink_paper_author",
     "upsert_author",
     "upsert_embedding",
     "upsert_paper",

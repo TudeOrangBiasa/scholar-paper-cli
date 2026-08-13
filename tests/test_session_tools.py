@@ -20,8 +20,8 @@ from scholar_paper_cli.tools.bibtex import (
 )
 from scholar_paper_cli.tools.session import (
     add_paper_to_session,
-    list_session_papers_tool,
-    remove_from_session_tool,
+    list_session_papers,
+    remove_from_session,
 )
 
 
@@ -87,7 +87,7 @@ async def test_add_paper_links_to_session(conn) -> None:
 async def test_remove_paper_from_session(conn) -> None:
     upsert_paper(conn, _make_paper("p1"))
     add_to_session(conn, "s1", "p1")
-    result = await remove_from_session_tool(conn, "s1", "p1")
+    result = await remove_from_session(conn, "s1", "p1")
     assert result.data is True
     from scholar_paper_cli.storage.sessions import list_session_papers
 
@@ -96,7 +96,7 @@ async def test_remove_paper_from_session(conn) -> None:
 
 @pytest.mark.asyncio
 async def test_remove_paper_not_in_session_returns_true(conn) -> None:
-    result = await remove_from_session_tool(conn, "s1", "missing")
+    result = await remove_from_session(conn, "s1", "missing")
     assert result.data is True
 
 
@@ -109,14 +109,14 @@ async def test_list_session_returns_full_papers(conn) -> None:
     upsert_paper(conn, _make_paper("p2"))
     add_to_session(conn, "s1", "p1")
     add_to_session(conn, "s1", "p2")
-    result = await list_session_papers_tool(conn, "s1")
+    result = await list_session_papers(conn, "s1")
     assert len(result.data) == 2
     assert {p.paper_id for p in result.data} == {"p1", "p2"}
 
 
 @pytest.mark.asyncio
 async def test_list_session_empty(conn) -> None:
-    result = await list_session_papers_tool(conn, "nonexistent")
+    result = await list_session_papers(conn, "nonexistent")
     assert result.data == []
 
 
@@ -128,7 +128,7 @@ async def test_list_session_skips_missing_papers(conn) -> None:
     upsert_paper(conn, _make_paper("p1"))
     add_to_session(conn, "s1", "p1")
     delete_paper(conn, "p1")
-    result = await list_session_papers_tool(conn, "s1")
+    result = await list_session_papers(conn, "s1")
     assert result.data == []
 
 

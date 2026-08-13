@@ -7,6 +7,7 @@
 - `skills/spm/SKILL.md` agent skill; installs to `~/.config/opencode/skills/spm/`.
 
 ### Changed
+- Architecture deepening (issues #2-#10): one `ensure_paper` materialization module (db lookup → fetch → parse → persist → optional embed) with settings-driven TTL; the cache wrapper exposes one tested `cached_fetch` seam; the offline probe shares the client transport instead of a second client; `httpx` timeouts translate to `APITimeoutError` (the offline fallback's timeout branch now runs); `CacheMetadata.source` gains `"db"` and provenance is honest (`cached=True` no longer fabricated for local writes); `merge_author` moved into storage (atomic, returns `MergeSummary`); CLI commands are descriptor-driven — defaults declared once on the tool or in Settings, dispatch is a table lookup; `--fields` added to read commands, `--positive-id`/`--negative-id` to `recommend`; `author-top --limit` defaults to `SPM_DEFAULT_PAPERS_LIMIT`; `list_session_papers_tool`/`remove_from_session_tool` renamed to `list_session_papers`/`remove_from_session`.
 - Project renamed to `scholar-paper-cli`: GitHub repo, distribution name, HTTP User-Agent, Python package (`scholar_paper_cli`), and default cache path (`~/.local/share/scholar-paper-cli/`). Command stays `spm`.
 - Embedding model removed from the repo and git LFS. Download once per `models/README.md`; the 11 embedding integration tests skip when the model is absent.
 - `storage/embeddings.py`: heavy imports (`numpy`, `onnxruntime`, `tokenizers`) now lazy — non-embedding commands start ~0.2s instead of ~1s.
@@ -18,7 +19,7 @@
 
 ### Tests
 - +22 CLI tests (`tests/test_cli.py`).
-- Total: 281 passing.
+- Total: 280 passing, 9 skipped (embedding model absent).
 
 ### Fixed
 - `models.Paper`: int fields (`citation_count`, `reference_count`, `influential_citation_count`) now coerce `None` to 0 via `field_validator(mode="before")`.

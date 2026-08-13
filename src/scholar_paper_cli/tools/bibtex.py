@@ -1,7 +1,7 @@
 """BibTeX export for session papers."""
 
 from scholar_paper_cli.models import Paper, ToolResponse
-from scholar_paper_cli.tools.session import list_session_papers_tool
+from scholar_paper_cli.tools.session import list_session_papers
 
 
 def _sanitize_cite_key(paper_id: str) -> str:
@@ -43,6 +43,6 @@ async def export_session_bibtex(
     conn,
     session_id: str,
 ) -> ToolResponse[str]:
-    result = await list_session_papers_tool(conn, session_id)
+    result = await list_session_papers(conn, session_id)
     bibtex = export_bibtex(result.data)
     return ToolResponse(data=bibtex, meta=result.meta)

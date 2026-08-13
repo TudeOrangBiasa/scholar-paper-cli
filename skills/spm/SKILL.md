@@ -30,24 +30,25 @@ Env vars (all optional):
 | `SPM_API_KEY` | Semantic Scholar API key (higher rate limits; free at semanticscholar.org/product/api) |
 | `SPM_OFFLINE_MODE=true` | Force cache-only mode, never call the API |
 | `SPM_CACHE_PATH` | SQLite cache path (default `~/.local/share/scholar-paper-cli/cache.db`) |
+| `SPM_CACHE_TTL_DAYS` | Cache/entity TTL in days (default 30) |
 | `SPM_EMBEDDING_MODEL` | `intfloat/multilingual-e5-small` or `none` to disable embeddings |
 
 ## Command reference
 
 | Command | Args | Flags (default) | Description |
 |---------|------|-----------------|-------------|
-| `spm search` | `<query>` | `--limit` (10), `--offset` (0) | Search papers by query |
-| `spm paper` | `<paper_id>` | `--embed` | Paper details, persists to cache; `--embed` also stores its embedding |
-| `spm citations` | `<paper_id>` | `--limit` (100), `--offset` (0) | Papers that cite this paper |
-| `spm references` | `<paper_id>` | `--limit` (100), `--offset` (0) | Papers referenced by this paper |
-| `spm author-search` | `<query>` | `--limit` (10), `--offset` (0) | Search authors by name |
-| `spm author` | `<author_id>` | — | Author profile, persists to cache |
-| `spm author-top` | `<author_id>` | `--limit` (10) | Author's most-cited papers |
+| `spm search` | `<query>` | `--limit` (10), `--offset` (0), `--fields` | Search papers by query |
+| `spm paper` | `<paper_id>` | `--embed`, `--fields` | Paper details, persists to cache; `--embed` also stores its embedding |
+| `spm citations` | `<paper_id>` | `--limit` (100), `--offset` (0), `--fields` | Papers that cite this paper |
+| `spm references` | `<paper_id>` | `--limit` (100), `--offset` (0), `--fields` | Papers referenced by this paper |
+| `spm author-search` | `<query>` | `--limit` (10), `--offset` (0), `--fields` | Search authors by name |
+| `spm author` | `<author_id>` | `--fields` | Author profile, persists to cache |
+| `spm author-top` | `<author_id>` | `--limit` (20), `--fields` | Author's most-cited papers |
 | `spm author-duplicates` | `<query>` | `--limit` (50), `--threshold` (0.8) | Group search results by name similarity |
 | `spm consolidate` | `<canonical> <dup>...` | — | Merge duplicate authors into the canonical author |
-| `spm recommend` | `<paper_id>` | `--limit` (100) | Semantic Scholar recommendations |
+| `spm recommend` | `<paper_id>` | `--limit` (100), `--fields`, `--positive-id`, `--negative-id` | Semantic Scholar recommendations |
 | `spm related` | `<paper_id>` | `--k` (10) | Locally computed semantic neighbors (needs embeddings) |
-| `spm session add` | `<session> <paper_id>` | — | Add a paper to a session (auto-fetches if not cached) |
+| `spm session add` | `<session> <paper_id>` | `--fields` | Add a paper to a session (auto-fetches if not cached) |
 | `spm session list` | `<session>` | — | List session papers, oldest first |
 | `spm session remove` | `<session> <paper_id>` | — | Remove a paper from a session |
 | `spm bibtex` | `<session>` | — | Export session papers as concatenated BibTeX |
@@ -57,10 +58,10 @@ Env vars (all optional):
 Success, one JSON object on stdout, exit 0:
 
 ```json
-{"data": {...}, "meta": {"source": "cache|api|offline_cache|embeddings", "cached": true, "fetched_at": "...", "ttl_until": "...", "offline": false, "cache_key": "..."}}
+{"data": {...}, "meta": {"source": "cache|api|offline_cache|embeddings|db", "cached": true, "fetched_at": "...", "ttl_until": "...", "offline": false, "cache_key": "..."}}
 ```
 
-`data` shape varies by command: search results are `{"query", "total", "offset", "next_offset", "data": [...]}`; lists are JSON arrays; `bibtex` is a string.
+`data` shape varies by command: search results are `{"query", "total", "offset", "next_offset", "data": [...]}`; lists are JSON arrays; `bibtex` is a string. `meta.source` is `"db"` when the result came from a local database row (e.g. `consolidate`, `session list`), `"cache"`/`"api"`/`"offline_cache"` for fetched data, `"embeddings"` for local semantic search.
 
 Errors, one JSON object on stdout, non-zero exit:
 
@@ -72,9 +73,10 @@ Exit codes: 0 ok, 1 runtime error (package error types like `OfflineError`, `API
 
 ## Caching semantics
 
-- Cache TTL is 30 days. Repeat a query and `meta.source` is `"cache"`, no API call.
+- Cache TTL defaults to 30 days, configurable via `SPM_CACHE_TTL_DAYS`. Repeat a query and `meta.source` is `"cache"`, no API call.
 - When the API is unreachable but stale cache exists, you get the cached data with `meta.offline: true`.
 - `SPM_OFFLINE_MODE=true` forces cache-only: repeat queries hit cache; a cache miss raises `OfflineError`.
+- Materialized papers serve local rows while fresh; stale rows refetch through the cache.
 - Offline fallback is the same behavior the MCP-era server had; nothing else changes.
 
 ## Embeddings

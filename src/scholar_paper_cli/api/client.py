@@ -8,7 +8,12 @@ import httpx
 from scholar_paper_cli.api.circuit_breaker import CircuitBreaker
 from scholar_paper_cli.api.rate_limiter import TokenBucket
 from scholar_paper_cli.config import get_settings
-from scholar_paper_cli.exceptions import APINotFoundError, APIRateLimitError, APIServerError
+from scholar_paper_cli.exceptions import (
+    APINotFoundError,
+    APIRateLimitError,
+    APIServerError,
+    APITimeoutError,
+)
 
 _ID_PATTERN = re.compile(r"^[A-Za-z0-9._:\-]+$")
 
@@ -16,6 +21,16 @@ _ID_PATTERN = re.compile(r"^[A-Za-z0-9._:\-]+$")
 def _validate_id(value: str, name: str) -> None:
     if not _ID_PATTERN.match(value):
         raise ValueError(f"invalid {name}: {value!r}")
+
+
+def _coerce_fields(fields: str | list[str] | None) -> str | None:
+    """Normalize fields to the comma-joined transport contract. Empty → None."""
+    if fields is None:
+        return None
+    if isinstance(fields, list):
+        parts = [f.strip() for f in fields if f and f.strip()]
+        return ",".join(parts) or None
+    return fields.strip() or None
 
 
 DEFAULT_PAPER_FIELDS = (
@@ -65,11 +80,21 @@ class SemanticScholarClient:
     async def __aexit__(self, *args: Any) -> None:
         await self.close()
 
+    @property
+    def transport(self) -> httpx.AsyncClient:
+        """The underlying httpx client (shared by requests and offline probes)."""
+        return self._client
+
     async def _get(self, path: str, params: dict[str, Any] | None = None) -> Any:
         await self.limiter.acquire()
 
         async def _req() -> Any:
-            r = await self._client.get(path, params=params)
+            try:
+                r = await self._client.get(path, params=params)
+            except httpx.TimeoutException as e:
+                raise APITimeoutError(f"timeout: {e}") from e
+            except httpx.TransportError as e:
+                raise APIServerError(f"transport error: {e}") from e
             if r.status_code == 200:
                 return r.json() if r.content else {}
             if r.status_code == 404:
@@ -83,7 +108,7 @@ class SemanticScholarClient:
         return await self.breaker.call(_req())
 
     async def search_papers(
-        self, query: str, *, limit: int = 10, offset: int = 0, fields: str | None = None
+        self, query: str, *, limit: int = 10, offset: int = 0, fields: str | list[str] | None = None
     ) -> dict[str, Any]:
         return await self._get(
             "/paper/search",
@@ -91,45 +116,45 @@ class SemanticScholarClient:
                 "query": query,
                 "limit": limit,
                 "offset": offset,
-                "fields": fields or DEFAULT_PAPER_FIELDS,
+                "fields": _coerce_fields(fields) or DEFAULT_PAPER_FIELDS,
             },
         )
 
-    async def get_paper(self, paper_id: str, *, fields: str | None = None) -> dict[str, Any]:
+    async def get_paper(self, paper_id: str, *, fields: str | list[str] | None = None) -> dict[str, Any]:
         _validate_id(paper_id, "paper_id")
         return await self._get(
             f"/paper/{paper_id}",
             {
-                "fields": fields or DEFAULT_PAPER_FIELDS,
+                "fields": _coerce_fields(fields) or DEFAULT_PAPER_FIELDS,
             },
         )
 
     async def get_citations(
-        self, paper_id: str, *, limit: int = 100, offset: int = 0, fields: str | None = None
+        self, paper_id: str, *, limit: int = 100, offset: int = 0, fields: str | list[str] | None = None
     ) -> dict[str, Any]:
         return await self._get(
             f"/paper/{paper_id}/citations",
             {
                 "limit": limit,
                 "offset": offset,
-                "fields": fields or f"paperId,{DEFAULT_PAPER_FIELDS}",
+                "fields": _coerce_fields(fields) or f"paperId,{DEFAULT_PAPER_FIELDS}",
             },
         )
 
     async def get_references(
-        self, paper_id: str, *, limit: int = 100, offset: int = 0, fields: str | None = None
+        self, paper_id: str, *, limit: int = 100, offset: int = 0, fields: str | list[str] | None = None
     ) -> dict[str, Any]:
         return await self._get(
             f"/paper/{paper_id}/references",
             {
                 "limit": limit,
                 "offset": offset,
-                "fields": fields or f"paperId,{DEFAULT_PAPER_FIELDS}",
+                "fields": _coerce_fields(fields) or f"paperId,{DEFAULT_PAPER_FIELDS}",
             },
         )
 
     async def search_authors(
-        self, query: str, *, limit: int = 10, offset: int = 0, fields: str | None = None
+        self, query: str, *, limit: int = 10, offset: int = 0, fields: str | list[str] | None = None
     ) -> dict[str, Any]:
         return await self._get(
             "/author/search",
@@ -137,28 +162,28 @@ class SemanticScholarClient:
                 "query": query,
                 "limit": limit,
                 "offset": offset,
-                "fields": fields or DEFAULT_AUTHOR_SEARCH_FIELDS,
+                "fields": _coerce_fields(fields) or DEFAULT_AUTHOR_SEARCH_FIELDS,
             },
         )
 
-    async def get_author(self, author_id: str, *, fields: str | None = None) -> dict[str, Any]:
+    async def get_author(self, author_id: str, *, fields: str | list[str] | None = None) -> dict[str, Any]:
         _validate_id(author_id, "author_id")
         return await self._get(
             f"/author/{author_id}",
             {
-                "fields": fields or DEFAULT_AUTHOR_FIELDS,
+                "fields": _coerce_fields(fields) or DEFAULT_AUTHOR_FIELDS,
             },
         )
 
     async def get_author_papers(
-        self, author_id: str, *, limit: int = 100, offset: int = 0, fields: str | None = None
+        self, author_id: str, *, limit: int = 100, offset: int = 0, fields: str | list[str] | None = None
     ) -> dict[str, Any]:
         return await self._get(
             f"/author/{author_id}/papers",
             {
                 "limit": limit,
                 "offset": offset,
-                "fields": fields or DEFAULT_PAPER_FIELDS,
+                "fields": _coerce_fields(fields) or DEFAULT_PAPER_FIELDS,
             },
         )
 
@@ -167,13 +192,13 @@ class SemanticScholarClient:
         paper_id: str,
         *,
         limit: int = 100,
-        fields: str | None = None,
+        fields: str | list[str] | None = None,
         positive_ids: list[str] | None = None,
         negative_ids: list[str] | None = None,
     ) -> dict[str, Any]:
         params: dict[str, Any] = {
             "limit": limit,
-            "fields": fields or DEFAULT_PAPER_FIELDS,
+            "fields": _coerce_fields(fields) or DEFAULT_PAPER_FIELDS,
         }
         if positive_ids:
             params["positive"] = ",".join(positive_ids)

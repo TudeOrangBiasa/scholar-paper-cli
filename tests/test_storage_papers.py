@@ -5,7 +5,7 @@ from datetime import timedelta
 import pytest
 from pydantic import HttpUrl
 
-from scholar_paper_cli.models import Author, AuthorBrief, Paper
+from scholar_paper_cli.models import AuthorBrief, Paper
 from scholar_paper_cli.storage.db import apply_migrations, connect
 from scholar_paper_cli.storage.papers import (
     count_papers,
@@ -13,10 +13,7 @@ from scholar_paper_cli.storage.papers import (
     get_paper,
     get_paper_by_arxiv,
     get_paper_by_doi,
-    link_paper_author,
-    list_paper_authors,
     list_papers,
-    unlink_paper_author,
     upsert_paper,
 )
 
@@ -146,34 +143,6 @@ def test_count_papers(conn, now) -> None:
     assert count_papers(conn) == 2
 
 
-def _seed_author(conn, author_id: str, now) -> None:
-    from scholar_paper_cli.storage.authors import upsert_author
-
-    upsert_author(conn, Author(author_id=author_id, name=author_id, fetched_at=now, ttl_until=now))
-
-
-def test_link_list_unlink_paper_author(conn, now) -> None:
-    upsert_paper(conn, Paper(paper_id="p1", fetched_at=now, ttl_until=now))
-    _seed_author(conn, "a1", now)
-    _seed_author(conn, "a2", now)
-    link_paper_author(conn, "p1", "a1", position=0)
-    link_paper_author(conn, "p1", "a2", position=1)
-    authors = list_paper_authors(conn, "p1")
-    assert authors == [("a1", 0), ("a2", 1)]
-    unlink_paper_author(conn, "p1", "a1")
-    authors = list_paper_authors(conn, "p1")
-    assert authors == [("a2", 1)]
-
-
-def test_link_paper_author_idempotent(conn, now) -> None:
-    upsert_paper(conn, Paper(paper_id="p1", fetched_at=now, ttl_until=now))
-    _seed_author(conn, "a1", now)
-    link_paper_author(conn, "p1", "a1", position=1)
-    link_paper_author(conn, "p1", "a1", position=2)
-    authors = list_paper_authors(conn, "p1")
-    assert authors == [("a1", 2)]
-
-
 def test_open_access_pdf_url_roundtrip(conn, now) -> None:
     url = HttpUrl("https://example.com/open.pdf")
     upsert_paper(
@@ -242,25 +211,3 @@ def test_delete_paper_removes_embedding(tmp_path) -> None:
     delete_paper(conn1, "p1")
     assert knn_search(conn1, [0.1] * 384, k=1) == []
     conn1.close()
-
-
-def test_link_unlink_paper_author_persists_across_connection_close(tmp_path) -> None:
-    db = tmp_path / "test.db"
-    conn1 = connect(db)
-    apply_migrations(conn1)
-    from datetime import UTC, datetime
-
-    now = datetime.now(UTC)
-    upsert_paper(conn1, Paper(paper_id="p1", fetched_at=now, ttl_until=now + timedelta(days=30)))
-    from scholar_paper_cli.models import Author
-    from scholar_paper_cli.storage.authors import upsert_author
-
-    upsert_author(
-        conn1, Author(author_id="a1", name="A", fetched_at=now, ttl_until=now + timedelta(days=30))
-    )
-    conn1.commit()
-    link_paper_author(conn1, "p1", "a1", 0)
-    conn1.close()
-    conn2 = connect(db)
-    assert list_paper_authors(conn2, "p1") == [("a1", 0)]
-    conn2.close()

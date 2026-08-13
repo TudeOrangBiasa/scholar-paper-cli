@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from scholar_paper_cli.exceptions import APINotFoundError
-from scholar_paper_cli.models import Author, CacheMetadata, PaperBrief
+from scholar_paper_cli.models import Author, CacheMetadata
 from scholar_paper_cli.storage.cache import CachedSemanticScholarClient
 from scholar_paper_cli.storage.db import apply_migrations, connect
 from scholar_paper_cli.tools.authors import (
@@ -176,66 +176,23 @@ async def test_find_duplicates_returns_empty_when_none(conn) -> None:
 
 
 @pytest.mark.asyncio
-async def test_consolidate_merges_aliases_and_papers(conn) -> None:
-    from scholar_paper_cli.storage.authors import (
-        get_author as get_author_db,
-    )
-    from scholar_paper_cli.storage.authors import (
-        upsert_author as upsert_author_db,
-    )
+async def test_consolidate_returns_honest_metadata(conn) -> None:
+    from scholar_paper_cli.storage.authors import upsert_author as upsert_author_db
 
-    p1 = PaperBrief(paper_id="p1", title="P1")
-    p2 = PaperBrief(paper_id="p2", title="P2")
-    p3 = PaperBrief(paper_id="p3", title="P3")
-    upsert_author_db(conn, _make_author("canon", "Alice", papers=[p1, p2], aliases=["A"]))
-    upsert_author_db(conn, _make_author("dup", "Alice Dup", papers=[p2, p3], aliases=["AD"]))
+    upsert_author_db(conn, _make_author("canon", "Alice"))
+    upsert_author_db(conn, _make_author("dup", "Alice Dup"))
 
     result = await consolidate_authors(conn, "canon", ["dup"])
 
-    assert "AD" in result.data.aliases
-    assert "A" in result.data.aliases
-    assert len(result.data.papers) == 3
-    assert {p.paper_id for p in result.data.papers} == {"p1", "p2", "p3"}
-    assert get_author_db(conn, "dup") is None
-    assert get_author_db(conn, "canon") is not None
-
-
-@pytest.mark.asyncio
-async def test_consolidate_updates_paper_authors_links(conn) -> None:
-    from scholar_paper_cli.models import Paper
-    from scholar_paper_cli.storage.authors import upsert_author as upsert_author_db
-    from scholar_paper_cli.storage.papers import link_paper_author, upsert_paper
-
-    now = datetime.now(UTC)
-    p1 = Paper(paper_id="p1", title="P1", fetched_at=now, ttl_until=now + timedelta(days=30))
-    p2 = Paper(paper_id="p2", title="P2", fetched_at=now, ttl_until=now + timedelta(days=30))
-    upsert_paper(conn, p1)
-    upsert_paper(conn, p2)
-    upsert_author_db(conn, _make_author("canon", "Alice", papers=[PaperBrief(paper_id="p1")]))
-    upsert_author_db(conn, _make_author("dup", "Alice Dup", papers=[PaperBrief(paper_id="p2")]))
-    link_paper_author(conn, "p2", "dup", 0)
-
-    await consolidate_authors(conn, "canon", ["dup"])
-
-    rows = conn.execute("SELECT author_id FROM paper_authors WHERE paper_id = 'p2'").fetchall()
-    author_ids = {r[0] for r in rows}
-    assert "canon" in author_ids
-    assert "dup" not in author_ids
+    assert result.data.author_id == "canon"
+    assert result.meta.source == "db"
+    assert result.meta.cached is False
 
 
 @pytest.mark.asyncio
 async def test_consolidate_missing_canonical_raises(conn) -> None:
     with pytest.raises(APINotFoundError):
         await consolidate_authors(conn, "nonexistent", [])
-
-
-@pytest.mark.asyncio
-async def test_consolidate_skips_missing_duplicates(conn) -> None:
-    from scholar_paper_cli.storage.authors import upsert_author as upsert_author_db
-
-    upsert_author_db(conn, _make_author("canon", "Alice", papers=[PaperBrief(paper_id="p1")]))
-    result = await consolidate_authors(conn, "canon", ["nonexistent_dup"])
-    assert result.data.author_id == "canon"
 
 
 def test_name_similarity_handles_none() -> None:

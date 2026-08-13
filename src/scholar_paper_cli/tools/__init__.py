@@ -22,8 +22,8 @@ from scholar_paper_cli.tools.recommendations import (
 )
 from scholar_paper_cli.tools.session import (
     add_paper_to_session,
-    list_session_papers_tool,
-    remove_from_session_tool,
+    list_session_papers,
+    remove_from_session,
 )
 
 __all__ = [
@@ -40,8 +40,8 @@ __all__ = [
     "get_paper_recommendations",
     "get_paper_references",
     "get_related_papers",
-    "list_session_papers_tool",
-    "remove_from_session_tool",
+    "list_session_papers",
+    "remove_from_session",
     "search_authors",
     "search_papers",
 ]

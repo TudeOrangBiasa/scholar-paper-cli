@@ -2,14 +2,19 @@
 
 from datetime import timedelta
 
-from scholar_paper_cli.models import Author, PaperBrief
+import pytest
+
+from scholar_paper_cli.exceptions import APINotFoundError
+from scholar_paper_cli.models import Author, Paper, PaperBrief
 from scholar_paper_cli.storage.authors import (
     count_authors,
     get_author,
     list_authors,
+    merge_author,
     search_authors_by_name,
     upsert_author,
 )
+from scholar_paper_cli.storage.papers import upsert_paper
 
 
 def test_upsert_get_roundtrip_all_fields(conn, now) -> None:
@@ -89,3 +94,87 @@ def test_upsert_author_updates_existing(conn, now) -> None:
     result = get_author(conn, "a1")
     assert result is not None
     assert result.name == "New Name"
+
+
+# ── merge_author ────────────────────────────────────────────────
+
+
+def test_merge_author_merges_aliases_and_papers(conn, now) -> None:
+    upsert_author(
+        conn,
+        Author(
+            author_id="canon",
+            name="Alice",
+            papers=[PaperBrief(paper_id="p1"), PaperBrief(paper_id="p2")],
+            aliases=["A"],
+            fetched_at=now,
+            ttl_until=now + timedelta(days=30),
+        ),
+    )
+    upsert_author(
+        conn,
+        Author(
+            author_id="dup",
+            name="Alice Dup",
+            papers=[PaperBrief(paper_id="p2"), PaperBrief(paper_id="p3")],
+            aliases=["AD"],
+            fetched_at=now,
+            ttl_until=now + timedelta(days=30),
+        ),
+    )
+
+    canonical, summary = merge_author(conn, "canon", ["dup"])
+
+    assert summary.aliases_merged == 1
+    assert summary.dups_merged == 1
+    assert summary.dups_skipped == 0
+    assert "AD" in canonical.aliases
+    assert {p.paper_id for p in canonical.papers} == {"p1", "p2", "p3"}
+    assert get_author(conn, "dup") is None
+    assert get_author(conn, "canon") is not None
+
+
+def test_merge_author_reparents_paper_authors_rows(conn, now) -> None:
+    upsert_author(
+        conn, Author(author_id="canon", name="Alice", fetched_at=now, ttl_until=now + timedelta(days=30))
+    )
+    upsert_author(
+        conn,
+        Author(author_id="dup", name="Alice Dup", fetched_at=now, ttl_until=now + timedelta(days=30)),
+    )
+    upsert_paper(conn, Paper(paper_id="p1", fetched_at=now, ttl_until=now + timedelta(days=30)))
+    upsert_paper(conn, Paper(paper_id="p2", fetched_at=now, ttl_until=now + timedelta(days=30)))
+    conn.execute(
+        "INSERT INTO paper_authors (paper_id, author_id, author_position) VALUES (?, ?, ?)",
+        ("p1", "canon", 0),
+    )
+    conn.execute(
+        "INSERT INTO paper_authors (paper_id, author_id, author_position) VALUES (?, ?, ?)",
+        ("p2", "dup", 0),
+    )
+    conn.commit()
+
+    _, summary = merge_author(conn, "canon", ["dup"])
+
+    assert summary.papers_re_parented == 1
+    rows = conn.execute(
+        "SELECT author_id, author_position FROM paper_authors WHERE paper_id = 'p2'"
+    ).fetchall()
+    assert [(r["author_id"], r["author_position"]) for r in rows] == [("canon", 0)]
+
+
+def test_merge_author_missing_canonical_raises(conn) -> None:
+    with pytest.raises(APINotFoundError):
+        merge_author(conn, "nonexistent", [])
+
+
+def test_merge_author_skips_missing_duplicates(conn, now) -> None:
+    upsert_author(
+        conn, Author(author_id="canon", name="Alice", fetched_at=now, ttl_until=now + timedelta(days=30))
+    )
+
+    canonical, summary = merge_author(conn, "canon", ["nonexistent"])
+
+    assert summary.dups_skipped == 1
+    assert summary.dups_merged == 0
+    assert canonical.author_id == "canon"

@@ -1,24 +1,23 @@
 """spm CLI: 15 subcommands mirroring the MCP tool set, JSON output on stdout.
 
-Dispatch table and error contract:
-- success: JSON ToolResponse envelope on stdout, exit 0
-- package error: JSON {"error": {"type": <ExceptionClassName>, "message": ...}} on stdout, exit 1
-- argparse usage error: stderr usage, exit 2
-- internal error: traceback on stderr + JSON InternalError envelope on stdout, exit 1
+Commands are declared as data in COMMANDS: argument defaults live once (on the
+tool function or in Settings), dependency needs drive build_state, and dispatch
+is a table lookup instead of an if-chain.
 """
 
 import argparse
 import asyncio
+import inspect
 import json
 import logging
 import sys
 import traceback
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 from scholar_paper_cli import __version__, tools
 from scholar_paper_cli.api.client import SemanticScholarClient
-from scholar_paper_cli.api.offline import OfflineDetector
 from scholar_paper_cli.config import get_settings, init_cache_dir
 from scholar_paper_cli.exceptions import EmbeddingModelNotFoundError, ScholarPaperError
 from scholar_paper_cli.models import ToolResponse
@@ -39,8 +38,308 @@ class CLIState:
     embedder: Embedder | None
 
 
+_MISSING = object()
+
+ArgKind = Literal["pos", "pos_many", "int", "float", "bool", "str", "append"]
+
+
+@dataclass(frozen=True)
+class ArgSpec:
+    """One command argument.
+
+    kind: pos | pos_many | int | float | bool | str | append.
+    default precedence: settings attr > explicit default > tool signature.
+    """
+
+    dest: str
+    kind: ArgKind = "pos"
+    help: str = ""
+    settings: str | None = None
+    default: Any = _MISSING
+
+
+@dataclass(frozen=True)
+class CommandSpec:
+    """One CLI command: declared needs, argument spec, and its handler.
+
+    func is the underlying tool (for signature-derived defaults).
+    needs is a subset of ("client", "conn", "embedder"); embedder_if names a
+    flag dest that additionally requires the embedder when set.
+    call is the handler for leaf commands; the session parent has none (its
+    subcommands route via _SESSION_BY_NAME).
+    """
+
+    name: str
+    help: str
+    call: Callable[[CLIState, argparse.Namespace], Awaitable[ToolResponse[Any]]] | None = None
+    func: Callable[..., Any] | None = None
+    needs: tuple[str, ...] = ()
+    embedder_if: str | None = None
+    args: tuple[ArgSpec, ...] = ()
+    session: tuple["CommandSpec", ...] = ()
+
+
+def _arg_default(spec: CommandSpec, arg: ArgSpec, settings) -> Any:
+    if arg.settings:
+        return getattr(settings, arg.settings)
+    if arg.default is not _MISSING:
+        return arg.default
+    if spec.func is not None:
+        return inspect.signature(spec.func).parameters[arg.dest].default
+    return None
+
+
+def _add_args(parser: argparse.ArgumentParser, spec: CommandSpec, settings) -> None:
+    for a in spec.args:
+        if a.kind == "pos":
+            parser.add_argument(a.dest, help=a.help)
+        elif a.kind == "pos_many":
+            parser.add_argument(a.dest, nargs="+", help=a.help)
+        else:
+            flag = f"--{a.dest.replace('_', '-')}"
+            if a.kind == "bool":
+                parser.add_argument(flag, action="store_true", help=a.help)
+            else:
+                default = _arg_default(spec, a, settings)
+                if a.kind == "append":
+                    parser.add_argument(flag, action="append", default=default, help=a.help)
+                elif a.kind == "int":
+                    parser.add_argument(flag, type=int, default=default, help=a.help)
+                elif a.kind == "float":
+                    parser.add_argument(flag, type=float, default=default, help=a.help)
+                else:
+                    parser.add_argument(flag, default=default, help=a.help)
+
+
+COMMANDS: dict[str, CommandSpec] = {
+    spec.name: spec
+    for spec in (
+        CommandSpec(
+            "search",
+            "search papers by query",
+            func=tools.papers.search_papers,
+            needs=("client",),
+            args=(
+                ArgSpec("query"),
+                ArgSpec("limit", "int", "max results", settings="default_search_limit"),
+                ArgSpec("offset", "int", "pagination offset"),
+                ArgSpec("fields", "str", "comma-separated paper fields to fetch"),
+            ),
+            call=lambda s, a: tools.papers.search_papers(
+                s.cached, a.query, limit=a.limit, offset=a.offset, fields=a.fields
+            ),
+        ),
+        CommandSpec(
+            "paper",
+            "get paper details by ID",
+            func=tools.papers.get_paper_details,
+            needs=("client", "conn"),
+            embedder_if="embed",
+            args=(
+                ArgSpec("paper_id"),
+                ArgSpec("embed", "bool", "persist a semantic embedding of the abstract"),
+                ArgSpec("fields", "str", "comma-separated paper fields to fetch"),
+            ),
+            call=lambda s, a: tools.papers.get_paper_details(
+                s.cached,
+                s.conn,
+                s.embedder if a.embed else None,
+                a.paper_id,
+                fields=a.fields,
+            ),
+        ),
+        CommandSpec(
+            "citations",
+            "list papers that cite a paper",
+            func=tools.papers.get_paper_citations,
+            needs=("client", "conn"),
+            args=(
+                ArgSpec("paper_id"),
+                ArgSpec("limit", "int", "max results", settings="default_citations_limit"),
+                ArgSpec("offset", "int", "pagination offset"),
+                ArgSpec("fields", "str", "comma-separated paper fields to fetch"),
+            ),
+            call=lambda s, a: tools.papers.get_paper_citations(
+                s.cached, s.conn, a.paper_id, limit=a.limit, offset=a.offset, fields=a.fields
+            ),
+        ),
+        CommandSpec(
+            "references",
+            "list papers referenced by a paper",
+            func=tools.papers.get_paper_references,
+            needs=("client", "conn"),
+            args=(
+                ArgSpec("paper_id"),
+                ArgSpec("limit", "int", "max results", settings="default_citations_limit"),
+                ArgSpec("offset", "int", "pagination offset"),
+                ArgSpec("fields", "str", "comma-separated paper fields to fetch"),
+            ),
+            call=lambda s, a: tools.papers.get_paper_references(
+                s.cached, s.conn, a.paper_id, limit=a.limit, offset=a.offset, fields=a.fields
+            ),
+        ),
+        CommandSpec(
+            "author-search",
+            "search authors by name",
+            func=tools.authors.search_authors,
+            needs=("client",),
+            args=(
+                ArgSpec("query"),
+                ArgSpec("limit", "int", "max results", settings="default_search_limit"),
+                ArgSpec("offset", "int", "pagination offset"),
+                ArgSpec("fields", "str", "comma-separated author fields to fetch"),
+            ),
+            call=lambda s, a: tools.authors.search_authors(
+                s.cached, a.query, limit=a.limit, offset=a.offset, fields=a.fields
+            ),
+        ),
+        CommandSpec(
+            "author",
+            "get author details by ID",
+            func=tools.authors.get_author_details,
+            needs=("client", "conn"),
+            args=(
+                ArgSpec("author_id"),
+                ArgSpec("fields", "str", "comma-separated author fields to fetch"),
+            ),
+            call=lambda s, a: tools.authors.get_author_details(
+                s.cached, s.conn, a.author_id, fields=a.fields
+            ),
+        ),
+        CommandSpec(
+            "author-top",
+            "list an author's most-cited papers",
+            func=tools.authors.get_author_top_papers,
+            needs=("client",),
+            args=(
+                ArgSpec("author_id"),
+                ArgSpec("limit", "int", "max results", settings="default_papers_limit"),
+                ArgSpec("fields", "str", "comma-separated paper fields to fetch"),
+            ),
+            call=lambda s, a: tools.authors.get_author_top_papers(
+                s.cached, a.author_id, limit=a.limit, fields=a.fields
+            ),
+        ),
+        CommandSpec(
+            "author-duplicates",
+            "group authors by name similarity",
+            func=tools.authors.find_author_duplicates,
+            needs=("client",),
+            args=(
+                ArgSpec("query"),
+                ArgSpec("limit", "int", "max authors to compare"),
+                ArgSpec("threshold", "float", "similarity threshold 0..1"),
+            ),
+            call=lambda s, a: tools.authors.find_author_duplicates(
+                s.cached, a.query, limit=a.limit, threshold=a.threshold
+            ),
+        ),
+        CommandSpec(
+            "consolidate",
+            "merge duplicate authors into a canonical author",
+            func=tools.authors.consolidate_authors,
+            needs=("conn",),
+            args=(
+                ArgSpec("canonical_id"),
+                ArgSpec("duplicate_ids", "pos_many", "author ids to merge into canonical"),
+            ),
+            call=lambda s, a: tools.authors.consolidate_authors(
+                s.conn, a.canonical_id, a.duplicate_ids
+            ),
+        ),
+        CommandSpec(
+            "recommend",
+            "get Semantic Scholar recommendations for a paper",
+            func=tools.recommendations.get_paper_recommendations,
+            needs=("client",),
+            args=(
+                ArgSpec("paper_id"),
+                ArgSpec("limit", "int", "max results"),
+                ArgSpec("fields", "str", "comma-separated paper fields to fetch"),
+                ArgSpec("positive_ids", "append", "paper ids to bias toward"),
+                ArgSpec("negative_ids", "append", "paper ids to bias against"),
+            ),
+            call=lambda s, a: tools.recommendations.get_paper_recommendations(
+                s.cached,
+                a.paper_id,
+                limit=a.limit,
+                fields=a.fields,
+                positive_ids=a.positive_ids,
+                negative_ids=a.negative_ids,
+            ),
+        ),
+        CommandSpec(
+            "related",
+            "find related papers via local semantic embeddings",
+            func=tools.recommendations.get_related_papers,
+            needs=("client", "conn", "embedder"),
+            args=(
+                ArgSpec("paper_id"),
+                ArgSpec("k", "int", "number of related papers"),
+            ),
+            call=lambda s, a: tools.recommendations.get_related_papers(
+                s.cached, s.conn, s.embedder, a.paper_id, k=a.k
+            ),
+        ),
+        CommandSpec(
+            "session",
+            "manage a working session of papers",
+            session=(
+                CommandSpec(
+                    "add",
+                    "add a paper to a session",
+                    func=tools.session.add_paper_to_session,
+                    needs=("client", "conn"),
+                    args=(
+                        ArgSpec("session_id"),
+                        ArgSpec("paper_id"),
+                        ArgSpec("fields", "str", "comma-separated paper fields to fetch"),
+                    ),
+                    call=lambda s, a: tools.session.add_paper_to_session(
+                        s.cached, s.conn, a.session_id, a.paper_id, fields=a.fields
+                    ),
+                ),
+                CommandSpec(
+                    "list",
+                    "list papers in a session",
+                    func=tools.session.list_session_papers,
+                    needs=("conn",),
+                    args=(ArgSpec("session_id"),),
+                    call=lambda s, a: tools.session.list_session_papers(s.conn, a.session_id),
+                ),
+                CommandSpec(
+                    "remove",
+                    "remove a paper from a session",
+                    func=tools.session.remove_from_session,
+                    needs=("conn",),
+                    args=(
+                        ArgSpec("session_id"),
+                        ArgSpec("paper_id"),
+                    ),
+                    call=lambda s, a: tools.session.remove_from_session(
+                        s.conn, a.session_id, a.paper_id
+                    ),
+                ),
+            ),
+        ),
+        CommandSpec(
+            "bibtex",
+            "export session papers as BibTeX",
+            func=tools.bibtex.export_session_bibtex,
+            needs=("conn",),
+            args=(ArgSpec("session_id"),),
+            call=lambda s, a: tools.bibtex.export_session_bibtex(s.conn, a.session_id),
+        ),
+    )
+}
+
+_SESSION_BY_NAME: dict[str, CommandSpec] = {
+    sub.name: sub for sub in COMMANDS["session"].session
+}
+
+
 def build_parser() -> argparse.ArgumentParser:
-    """Build the spm argument parser with all 15 subcommands."""
+    """Build the spm argument parser from the command descriptors."""
     settings = get_settings()
     parser = argparse.ArgumentParser(
         prog="spm",
@@ -48,73 +347,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = parser.add_subparsers(dest="command", metavar="COMMAND", required=True)
-
-    p = sub.add_parser("search", help="search papers by query")
-    p.add_argument("query")
-    p.add_argument("--limit", type=int, default=settings.default_search_limit)
-    p.add_argument("--offset", type=int, default=0)
-
-    p = sub.add_parser("paper", help="get paper details by ID")
-    p.add_argument("paper_id")
-    p.add_argument(
-        "--embed", action="store_true", help="persist a semantic embedding of the abstract"
-    )
-
-    p = sub.add_parser("citations", help="list papers that cite a paper")
-    p.add_argument("paper_id")
-    p.add_argument("--limit", type=int, default=settings.default_citations_limit)
-    p.add_argument("--offset", type=int, default=0)
-
-    p = sub.add_parser("references", help="list papers referenced by a paper")
-    p.add_argument("paper_id")
-    p.add_argument("--limit", type=int, default=100)
-    p.add_argument("--offset", type=int, default=0)
-
-    p = sub.add_parser("author-search", help="search authors by name")
-    p.add_argument("query")
-    p.add_argument("--limit", type=int, default=settings.default_search_limit)
-    p.add_argument("--offset", type=int, default=0)
-
-    p = sub.add_parser("author", help="get author details by ID")
-    p.add_argument("author_id")
-
-    p = sub.add_parser("author-top", help="list an author's most-cited papers")
-    p.add_argument("author_id")
-    p.add_argument("--limit", type=int, default=10)
-
-    p = sub.add_parser("author-duplicates", help="group authors by name similarity")
-    p.add_argument("query")
-    p.add_argument("--limit", type=int, default=50)
-    p.add_argument("--threshold", type=float, default=0.8)
-
-    p = sub.add_parser("consolidate", help="merge duplicate authors into a canonical author")
-    p.add_argument("canonical_id")
-    p.add_argument("duplicate_ids", nargs="+")
-
-    p = sub.add_parser("recommend", help="get Semantic Scholar recommendations for a paper")
-    p.add_argument("paper_id")
-    p.add_argument("--limit", type=int, default=100)
-
-    p = sub.add_parser("related", help="find related papers via local semantic embeddings")
-    p.add_argument("paper_id")
-    p.add_argument("--k", type=int, default=10)
-
-    session = sub.add_parser("session", help="manage a working session of papers")
-    session_sub = session.add_subparsers(
-        dest="session_command", metavar="SUBCOMMAND", required=True
-    )
-    p = session_sub.add_parser("add", help="add a paper to a session")
-    p.add_argument("session_id")
-    p.add_argument("paper_id")
-    p = session_sub.add_parser("list", help="list papers in a session")
-    p.add_argument("session_id")
-    p = session_sub.add_parser("remove", help="remove a paper from a session")
-    p.add_argument("session_id")
-    p.add_argument("paper_id")
-
-    p = sub.add_parser("bibtex", help="export session papers as BibTeX")
-    p.add_argument("session_id")
-
+    for spec in COMMANDS.values():
+        if spec.session:
+            p = sub.add_parser(spec.name, help=spec.help)
+            ssub = p.add_subparsers(dest="session_command", metavar="SUBCOMMAND", required=True)
+            for s in spec.session:
+                sp = ssub.add_parser(s.name, help=s.help)
+                _add_args(sp, s, settings)
+        else:
+            p = sub.add_parser(spec.name, help=spec.help)
+            _add_args(p, spec, settings)
     return parser
 
 
@@ -127,8 +369,9 @@ async def build_state(need_embedder: bool) -> CLIState:
     try:
         apply_migrations(conn)
         raw_client = SemanticScholarClient()
-        offline = OfflineDetector(raw_client._client, force_offline=settings.offline_mode)
-        cached = CachedSemanticScholarClient(raw_client, conn, offline=offline)
+        cached = CachedSemanticScholarClient(
+            raw_client, conn, force_offline=settings.offline_mode
+        )
         embedder: Embedder | None = None
         if settings.embedding_model != "none" and need_embedder:
             try:
@@ -144,68 +387,33 @@ async def build_state(need_embedder: bool) -> CLIState:
 
 
 async def _dispatch(state: CLIState, args: argparse.Namespace) -> ToolResponse[Any]:
-    cached = state.cached
-    conn = state.conn
-    if args.command == "search":
-        return await tools.papers.search_papers(
-            cached, args.query, limit=args.limit, offset=args.offset
-        )
-    if args.command == "paper":
-        embedder = state.embedder if args.embed else None
-        return await tools.papers.get_paper_details(cached, conn, embedder, args.paper_id)
-    if args.command == "citations":
-        return await tools.papers.get_paper_citations(
-            cached, conn, args.paper_id, limit=args.limit, offset=args.offset
-        )
-    if args.command == "references":
-        return await tools.papers.get_paper_references(
-            cached, conn, args.paper_id, limit=args.limit, offset=args.offset
-        )
-    if args.command == "author-search":
-        return await tools.authors.search_authors(
-            cached, args.query, limit=args.limit, offset=args.offset
-        )
-    if args.command == "author":
-        return await tools.authors.get_author_details(cached, conn, args.author_id)
-    if args.command == "author-top":
-        return await tools.authors.get_author_top_papers(cached, args.author_id, limit=args.limit)
-    if args.command == "author-duplicates":
-        return await tools.authors.find_author_duplicates(
-            cached, args.query, limit=args.limit, threshold=args.threshold
-        )
-    if args.command == "consolidate":
-        return await tools.authors.consolidate_authors(conn, args.canonical_id, args.duplicate_ids)
-    if args.command == "recommend":
-        return await tools.recommendations.get_paper_recommendations(
-            cached, args.paper_id, limit=args.limit
-        )
-    if args.command == "related":
-        return await tools.recommendations.get_related_papers(
-            cached, conn, state.embedder, args.paper_id, k=args.k
-        )
-    if args.command == "session":
-        if args.session_command == "add":
-            return await tools.session.add_paper_to_session(
-                cached, conn, args.session_id, args.paper_id
-            )
-        if args.session_command == "list":
-            return await tools.session.list_session_papers_tool(conn, args.session_id)
-        if args.session_command == "remove":
-            return await tools.session.remove_from_session_tool(
-                conn, args.session_id, args.paper_id
-            )
-        raise ValueError(f"unknown session subcommand: {args.session_command}")
-    if args.command == "bibtex":
-        return await tools.bibtex.export_session_bibtex(conn, args.session_id)
-    raise ValueError(f"unknown command: {args.command}")
+    spec = COMMANDS.get(args.command)
+    if spec is None:
+        raise ValueError(f"unknown command: {args.command}")
+    if spec.session:
+        sub = _SESSION_BY_NAME.get(args.session_command)
+        if sub is None:
+            raise ValueError(f"unknown session subcommand: {args.session_command}")
+        if sub.call is None:
+            raise ValueError(f"session subcommand has no handler: {args.session_command}")
+        return await sub.call(state, args)
+    if spec.call is None:
+        raise ValueError(f"command has no handler: {args.command}")
+    return await spec.call(state, args)
+
+
+def _need_embedder(spec: CommandSpec, args: argparse.Namespace) -> bool:
+    if "embedder" in spec.needs:
+        return True
+    return spec.embedder_if is not None and bool(getattr(args, spec.embedder_if, False))
 
 
 async def run_command(args: argparse.Namespace) -> int:
     """Run one command: build state, dispatch, print JSON envelope."""
-    need_embedder = args.command == "related" or (
-        args.command == "paper" and bool(getattr(args, "embed", False))
-    )
-    state = await build_state(need_embedder)
+    spec = COMMANDS[args.command]
+    if spec.session:
+        spec = _SESSION_BY_NAME[args.session_command]
+    state = await build_state(_need_embedder(spec, args))
     try:
         result = await _dispatch(state, args)
     finally:

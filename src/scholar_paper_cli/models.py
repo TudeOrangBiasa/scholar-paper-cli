@@ -121,12 +121,15 @@ class CitationEdge(_Base):
     is_influential: bool = False
 
 
+CacheSource = Literal["cache", "api", "offline_cache", "embeddings", "db"]
+
+
 class CacheMetadata(_Base):
     """Cache metadata envelope for every response."""
 
     cached: bool
     fetched_at: datetime
-    source: Literal["cache", "api", "offline_cache", "embeddings"]
+    source: CacheSource
     offline: bool = False
     ttl_until: datetime | None = None
     cache_key: str | None = None
