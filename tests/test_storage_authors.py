@@ -136,11 +136,14 @@ def test_merge_author_merges_aliases_and_papers(conn, now) -> None:
 
 def test_merge_author_reparents_paper_authors_rows(conn, now) -> None:
     upsert_author(
-        conn, Author(author_id="canon", name="Alice", fetched_at=now, ttl_until=now + timedelta(days=30))
+        conn,
+        Author(author_id="canon", name="Alice", fetched_at=now, ttl_until=now + timedelta(days=30)),
     )
     upsert_author(
         conn,
-        Author(author_id="dup", name="Alice Dup", fetched_at=now, ttl_until=now + timedelta(days=30)),
+        Author(
+            author_id="dup", name="Alice Dup", fetched_at=now, ttl_until=now + timedelta(days=30)
+        ),
     )
     upsert_paper(conn, Paper(paper_id="p1", fetched_at=now, ttl_until=now + timedelta(days=30)))
     upsert_paper(conn, Paper(paper_id="p2", fetched_at=now, ttl_until=now + timedelta(days=30)))
@@ -170,7 +173,8 @@ def test_merge_author_missing_canonical_raises(conn) -> None:
 
 def test_merge_author_skips_missing_duplicates(conn, now) -> None:
     upsert_author(
-        conn, Author(author_id="canon", name="Alice", fetched_at=now, ttl_until=now + timedelta(days=30))
+        conn,
+        Author(author_id="canon", name="Alice", fetched_at=now, ttl_until=now + timedelta(days=30)),
     )
 
     canonical, summary = merge_author(conn, "canon", ["nonexistent"])

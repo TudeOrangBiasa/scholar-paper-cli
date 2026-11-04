@@ -32,3 +32,4 @@ models/tokenizer.json
 .*.bak
 *~
 .$*
+.scratch/

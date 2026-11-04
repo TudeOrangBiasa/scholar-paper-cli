@@ -120,7 +120,9 @@ class SemanticScholarClient:
             },
         )
 
-    async def get_paper(self, paper_id: str, *, fields: str | list[str] | None = None) -> dict[str, Any]:
+    async def get_paper(
+        self, paper_id: str, *, fields: str | list[str] | None = None
+    ) -> dict[str, Any]:
         _validate_id(paper_id, "paper_id")
         return await self._get(
             f"/paper/{paper_id}",
@@ -130,7 +132,12 @@ class SemanticScholarClient:
         )
 
     async def get_citations(
-        self, paper_id: str, *, limit: int = 100, offset: int = 0, fields: str | list[str] | None = None
+        self,
+        paper_id: str,
+        *,
+        limit: int = 100,
+        offset: int = 0,
+        fields: str | list[str] | None = None,
     ) -> dict[str, Any]:
         return await self._get(
             f"/paper/{paper_id}/citations",
@@ -142,7 +149,12 @@ class SemanticScholarClient:
         )
 
     async def get_references(
-        self, paper_id: str, *, limit: int = 100, offset: int = 0, fields: str | list[str] | None = None
+        self,
+        paper_id: str,
+        *,
+        limit: int = 100,
+        offset: int = 0,
+        fields: str | list[str] | None = None,
     ) -> dict[str, Any]:
         return await self._get(
             f"/paper/{paper_id}/references",
@@ -166,7 +178,9 @@ class SemanticScholarClient:
             },
         )
 
-    async def get_author(self, author_id: str, *, fields: str | list[str] | None = None) -> dict[str, Any]:
+    async def get_author(
+        self, author_id: str, *, fields: str | list[str] | None = None
+    ) -> dict[str, Any]:
         _validate_id(author_id, "author_id")
         return await self._get(
             f"/author/{author_id}",
@@ -176,7 +190,12 @@ class SemanticScholarClient:
         )
 
     async def get_author_papers(
-        self, author_id: str, *, limit: int = 100, offset: int = 0, fields: str | list[str] | None = None
+        self,
+        author_id: str,
+        *,
+        limit: int = 100,
+        offset: int = 0,
+        fields: str | list[str] | None = None,
     ) -> dict[str, Any]:
         return await self._get(
             f"/author/{author_id}/papers",

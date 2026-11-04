@@ -270,7 +270,10 @@ async def test_ensure_paper_uses_local_row_without_fetch(conn) -> None:
     from scholar_paper_cli.tools.papers import ensure_paper
 
     now = datetime.now(UTC)
-    ups_p(conn, Paper(paper_id="p1", title="Local", fetched_at=now, ttl_until=now + timedelta(days=30)))
+    ups_p(
+        conn,
+        Paper(paper_id="p1", title="Local", fetched_at=now, ttl_until=now + timedelta(days=30)),
+    )
     client = _make_client(SAMPLE_PAPER_DATA)
 
     paper, meta = await ensure_paper(client, conn, "p1")
@@ -331,7 +334,10 @@ async def test_ensure_paper_fresh_always_fetches(conn) -> None:
     from scholar_paper_cli.tools.papers import ensure_paper
 
     now = datetime.now(UTC)
-    ups_p(conn, Paper(paper_id="p1", title="Local", fetched_at=now, ttl_until=now + timedelta(days=30)))
+    ups_p(
+        conn,
+        Paper(paper_id="p1", title="Local", fetched_at=now, ttl_until=now + timedelta(days=30)),
+    )
     client = _make_client(SAMPLE_PAPER_DATA)
 
     paper, meta = await ensure_paper(client, conn, "p1", fresh=True)

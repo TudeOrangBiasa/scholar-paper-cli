@@ -152,9 +152,7 @@ def merge_author(
 
         canonical.paper_count = len(canonical.papers)
         canonical.fetched_at = datetime.now(UTC)
-        canonical.ttl_until = canonical.fetched_at + timedelta(
-            days=get_settings().cache_ttl_days
-        )
+        canonical.ttl_until = canonical.fetched_at + timedelta(days=get_settings().cache_ttl_days)
         _upsert_author_sql(conn, canonical)
         if started:
             conn.commit()
