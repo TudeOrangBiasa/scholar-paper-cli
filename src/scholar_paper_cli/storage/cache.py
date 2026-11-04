@@ -142,16 +142,16 @@ class CachedSemanticScholarClient:
     def _is_fresh(self, cached: dict[str, Any]) -> bool:
         return datetime.fromisoformat(cached["ttl_until"]) > datetime.now(UTC)
 
-    def _meta(
-        self, key, now, source, cached, *, offline=False, ttl_until=None
-    ) -> CacheMetadata:
+    def _meta(self, key, now, source, cached, *, offline=False, ttl_until=None) -> CacheMetadata:
         if cached:
             ttl_until = datetime.fromisoformat(cached["ttl_until"])
             fetched_at = datetime.fromisoformat(cached["fetched_at"])
             return make_metadata(
                 source, fetched_at=fetched_at, ttl_until=ttl_until, cache_key=key, offline=offline
             )
-        return make_metadata(source, fetched_at=now, ttl_until=ttl_until, cache_key=key, offline=offline)
+        return make_metadata(
+            source, fetched_at=now, ttl_until=ttl_until, cache_key=key, offline=offline
+        )
 
     async def search_papers(
         self, query: str, *, limit: int = 10, offset: int = 0, fields: str | list[str] | None = None

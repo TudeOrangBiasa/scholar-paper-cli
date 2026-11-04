@@ -333,9 +333,7 @@ COMMANDS: dict[str, CommandSpec] = {
     )
 }
 
-_SESSION_BY_NAME: dict[str, CommandSpec] = {
-    sub.name: sub for sub in COMMANDS["session"].session
-}
+_SESSION_BY_NAME: dict[str, CommandSpec] = {sub.name: sub for sub in COMMANDS["session"].session}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -369,9 +367,7 @@ async def build_state(need_embedder: bool) -> CLIState:
     try:
         apply_migrations(conn)
         raw_client = SemanticScholarClient()
-        cached = CachedSemanticScholarClient(
-            raw_client, conn, force_offline=settings.offline_mode
-        )
+        cached = CachedSemanticScholarClient(raw_client, conn, force_offline=settings.offline_mode)
         embedder: Embedder | None = None
         if settings.embedding_model != "none" and need_embedder:
             try:
