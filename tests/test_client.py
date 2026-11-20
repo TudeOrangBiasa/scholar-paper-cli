@@ -174,9 +174,30 @@ async def test_404_raises_api_not_found() -> None:
 
 async def test_429_raises_api_rate_limit() -> None:
     transport = httpx.MockTransport(lambda r: httpx.Response(429))
-    async with SemanticScholarClient(transport=transport, base_url="http://test") as client:
+    async with SemanticScholarClient(
+        transport=transport, base_url="http://test", retry_delay=0
+    ) as client:
         with pytest.raises(APIRateLimitError):
             await client.get_paper("x")
+
+
+async def test_429_retries_once_and_succeeds() -> None:
+    calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return httpx.Response(429)
+        return httpx.Response(200, json={"paperId": "abc"})
+
+    transport = httpx.MockTransport(handler)
+    async with SemanticScholarClient(
+        transport=transport, base_url="http://test", retry_delay=0
+    ) as client:
+        result = await client.get_paper("abc")
+    assert result == {"paperId": "abc"}
+    assert calls == 2
 
 
 async def test_500_raises_api_server_error() -> None:

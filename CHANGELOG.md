@@ -19,9 +19,11 @@
 
 ### Tests
 - +22 CLI tests (`tests/test_cli.py`).
-- Total: 280 passing, 9 skipped (embedding model absent).
+- +1 API client 429 backoff retry test (`tests/test_client.py`).
+- Total: 281 passing, 9 skipped (embedding model absent).
 
 ### Fixed
+- `api.client`: retry once with backoff on HTTP 429 burst rate limits before raising `APIRateLimitError`.
 - `models.Paper`: int fields (`citation_count`, `reference_count`, `influential_citation_count`) now coerce `None` to 0 via `field_validator(mode="before")`.
 - `models.Paper`: list fields (`publication_types`, `fields_of_study`, `authors`) and `is_open_access` coerce `None` to safe default.
 - `models.Author`: `name` now `str | None`; list fields (`affiliations`, `papers`, `aliases`) coerce `None` to `[]`.

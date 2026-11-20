@@ -1,5 +1,6 @@
 """Semantic Scholar HTTP client with rate limiting and circuit breaker."""
 
+import asyncio
 import re
 from typing import Any
 
@@ -54,6 +55,7 @@ class SemanticScholarClient:
         failure_threshold: int = 5,
         reset_timeout: float = 60.0,
         timeout: float = 30.0,
+        retry_delay: float = 1.5,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         settings = get_settings()
@@ -61,6 +63,7 @@ class SemanticScholarClient:
         self.api_key = api_key if api_key is not None else settings.api_key
         self.limiter = TokenBucket(rate, burst)
         self.breaker = CircuitBreaker(failure_threshold, reset_timeout)
+        self.retry_delay = retry_delay
         headers = {"User-Agent": "scholar-paper-cli/0.1.0"}
         if self.api_key:
             headers["x-api-key"] = self.api_key
@@ -89,21 +92,25 @@ class SemanticScholarClient:
         await self.limiter.acquire()
 
         async def _req() -> Any:
-            try:
-                r = await self._client.get(path, params=params)
-            except httpx.TimeoutException as e:
-                raise APITimeoutError(f"timeout: {e}") from e
-            except httpx.TransportError as e:
-                raise APIServerError(f"transport error: {e}") from e
-            if r.status_code == 200:
-                return r.json() if r.content else {}
-            if r.status_code == 404:
-                raise APINotFoundError(f"not found: {r.url}")
-            if r.status_code == 429:
-                raise APIRateLimitError(f"rate limited: {r.url}")
-            if r.status_code >= 500:
-                raise APIServerError(f"server error {r.status_code}: {r.url}")
-            raise APIServerError(f"unexpected status {r.status_code}: {r.url}")
+            for attempt in range(2):
+                try:
+                    r = await self._client.get(path, params=params)
+                except httpx.TimeoutException as e:
+                    raise APITimeoutError(f"timeout: {e}") from e
+                except httpx.TransportError as e:
+                    raise APIServerError(f"transport error: {e}") from e
+                if r.status_code == 200:
+                    return r.json() if r.content else {}
+                if r.status_code == 429 and attempt == 0:
+                    await asyncio.sleep(self.retry_delay)
+                    continue
+                if r.status_code == 404:
+                    raise APINotFoundError(f"not found: {r.url}")
+                if r.status_code == 429:
+                    raise APIRateLimitError(f"rate limited: {r.url}")
+                if r.status_code >= 500:
+                    raise APIServerError(f"server error {r.status_code}: {r.url}")
+                raise APIServerError(f"unexpected status {r.status_code}: {r.url}")
 
         return await self.breaker.call(_req())
 

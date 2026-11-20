@@ -22,7 +22,7 @@ Skills stack:
 - impeccable (design direction, anti-AI-slop visual prompts)
 - drawio (architecture diagrams)
 
-Test stats: 280 pass; 9 embedding integration tests skip when the model is not downloaded (see `models/README.md`).
+Test stats: 281 pass; 9 embedding integration tests skip when the model is not downloaded (see `models/README.md`).
 
 See `docs/PLAN.md` for the full plan, `docs/CONFIGURATION.md` for env vars, `docs/WORKFLOW.md` for document-writing integration.
 
